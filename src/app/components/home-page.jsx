@@ -55,11 +55,16 @@ export function HomePage() {
 
   // Auto-play slider
   useEffect(() => {
+    // Stop auto-play when user is searching
+    if (searchQuery) {
+      return;
+    }
+
     const timer = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % sliderData.length);
     }, 5000);
     return () => clearInterval(timer);
-  }, []);
+  }, [searchQuery]);
 
   const nextSlide = () => {
     setCurrentSlide((prev) => (prev + 1) % sliderData.length);

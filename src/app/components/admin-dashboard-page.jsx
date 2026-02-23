@@ -1,10 +1,46 @@
-import { Users, Store, ShoppingBag, CheckCircle, XCircle, LogOut, Shield } from 'lucide-react';
+import {
+  Users,
+  Store,
+  ShoppingBag,
+  CheckCircle,
+  XCircle,
+  LogOut,
+  Shield,
+} from "lucide-react";
+import { useNavigate } from "react-router-dom";
+import { useAuth } from "../context/AuthContext";
 
 export function AdminDashboardPage() {
+  const navigate = useNavigate();
+  const { logout, user } = useAuth();
+
+  const handleLogout = () => {
+    logout();
+    navigate("/admin-login");
+  };
+
   const pendingRestaurants = [
-    { id: 1, name: 'Tandoori Nights', owner: 'Raj Kumar', location: 'Delhi', date: '2026-01-26' },
-    { id: 2, name: 'Sushi Bar', owner: 'Yuki Tanaka', location: 'Mumbai', date: '2026-01-25' },
-    { id: 3, name: 'Mexican Fiesta', owner: 'Carlos Rodriguez', location: 'Bangalore', date: '2026-01-24' },
+    {
+      id: 1,
+      name: "Tandoori Nights",
+      owner: "Raj Kumar",
+      location: "Delhi",
+      date: "2026-01-26",
+    },
+    {
+      id: 2,
+      name: "Sushi Bar",
+      owner: "Yuki Tanaka",
+      location: "Mumbai",
+      date: "2026-01-25",
+    },
+    {
+      id: 3,
+      name: "Mexican Fiesta",
+      owner: "Carlos Rodriguez",
+      location: "Bangalore",
+      date: "2026-01-24",
+    },
   ];
 
   const stats = {
@@ -24,11 +60,17 @@ export function AdminDashboardPage() {
               <Shield className="w-6 h-6 text-green-600" />
             </div>
             <div>
-              <h1 className="text-xl font-bold text-gray-900">Admin Dashboard</h1>
+              <h1 className="text-xl font-bold text-gray-900">
+                Admin Dashboard
+              </h1>
               <p className="text-sm text-gray-500">Platform Management</p>
             </div>
           </div>
-          <button className="text-gray-700 hover:text-red-600">
+          <button
+            onClick={handleLogout}
+            className="text-gray-700 hover:text-red-600 transition-colors"
+            title="Logout"
+          >
             <LogOut className="w-6 h-6" />
           </button>
         </div>
@@ -42,7 +84,9 @@ export function AdminDashboardPage() {
               <h3 className="text-gray-600">Total Users</h3>
               <Users className="w-8 h-8 text-blue-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalUsers}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.totalUsers}
+            </p>
             <p className="text-sm text-green-600 mt-1">+23 this week</p>
           </div>
 
@@ -51,7 +95,9 @@ export function AdminDashboardPage() {
               <h3 className="text-gray-600">Restaurants</h3>
               <Store className="w-8 h-8 text-orange-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalRestaurants}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.totalRestaurants}
+            </p>
             <p className="text-sm text-green-600 mt-1">+5 this week</p>
           </div>
 
@@ -60,7 +106,9 @@ export function AdminDashboardPage() {
               <h3 className="text-gray-600">Total Orders</h3>
               <ShoppingBag className="w-8 h-8 text-purple-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.totalOrders}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.totalOrders}
+            </p>
             <p className="text-sm text-green-600 mt-1">+156 today</p>
           </div>
 
@@ -69,7 +117,9 @@ export function AdminDashboardPage() {
               <h3 className="text-gray-600">Pending</h3>
               <CheckCircle className="w-8 h-8 text-yellow-600" />
             </div>
-            <p className="text-3xl font-bold text-gray-900">{stats.pendingApprovals}</p>
+            <p className="text-3xl font-bold text-gray-900">
+              {stats.pendingApprovals}
+            </p>
             <p className="text-sm text-gray-500 mt-1">Need approval</p>
           </div>
         </div>
@@ -77,7 +127,9 @@ export function AdminDashboardPage() {
         {/* Pending Approvals */}
         <div className="bg-white rounded-lg shadow-md overflow-hidden">
           <div className="px-6 py-4 border-b border-gray-200">
-            <h2 className="text-lg font-semibold text-gray-900">Pending Restaurant Approvals</h2>
+            <h2 className="text-lg font-semibold text-gray-900">
+              Pending Restaurant Approvals
+            </h2>
           </div>
 
           <div className="overflow-x-auto">
@@ -107,7 +159,9 @@ export function AdminDashboardPage() {
                     <td className="px-6 py-4 whitespace-nowrap">
                       <div className="flex items-center">
                         <div className="w-10 h-10 bg-gradient-to-br from-orange-200 to-orange-400 rounded-lg flex-shrink-0 mr-3"></div>
-                        <div className="font-medium text-gray-900">{restaurant.name}</div>
+                        <div className="font-medium text-gray-900">
+                          {restaurant.name}
+                        </div>
                       </div>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
@@ -147,12 +201,17 @@ export function AdminDashboardPage() {
 
         {/* Recent Activity */}
         <div className="mt-6 bg-white rounded-lg shadow-md p-6">
-          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">
+            Recent Activity
+          </h2>
           <div className="space-y-3">
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-2 h-2 bg-green-600 rounded-full mt-2"></div>
               <div>
-                <p className="text-sm text-gray-900">New restaurant <span className="font-medium">Pizza Palace</span> approved</p>
+                <p className="text-sm text-gray-900">
+                  New restaurant{" "}
+                  <span className="font-medium">Pizza Palace</span> approved
+                </p>
                 <p className="text-xs text-gray-500">2 hours ago</p>
               </div>
             </div>
@@ -166,7 +225,9 @@ export function AdminDashboardPage() {
             <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
               <div className="w-2 h-2 bg-orange-600 rounded-full mt-2"></div>
               <div>
-                <p className="text-sm text-gray-900">1,234 orders completed today</p>
+                <p className="text-sm text-gray-900">
+                  1,234 orders completed today
+                </p>
                 <p className="text-xs text-gray-500">1 day ago</p>
               </div>
             </div>
