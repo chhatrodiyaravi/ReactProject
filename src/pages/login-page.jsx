@@ -1,7 +1,8 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link, useLocation, useNavigate } from "react-router-dom";
 import { Mail, Lock, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../context/AuthContext";
+import { isValidEmail } from "../utils/validation";
 
 export function LoginPage() {
   const [email, setEmail] = useState("");
@@ -12,8 +13,8 @@ export function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+  const location = useLocation();
+  const loginMessage = location.state?.message;
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -37,7 +38,8 @@ export function LoginPage() {
     try {
       const result = await login(trimmedEmail, trimmedPassword, "customer");
       if (result.success) {
-        navigate("/");
+        const redirectPath = location.state?.from || "/";
+        navigate(redirectPath, { replace: true });
       } else {
         setError(result.error);
       }
@@ -62,6 +64,12 @@ export function LoginPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-8">
+          {loginMessage && (
+            <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+              <p className="text-sm text-blue-700">{loginMessage}</p>
+            </div>
+          )}
+
           {error && (
             <div className="mb-4 p-3 bg-red-50 border border-red-200 rounded-lg flex items-start gap-2">
               <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0 mt-0.5" />
@@ -77,7 +85,8 @@ export function LoginPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter your email"
@@ -192,4 +201,3 @@ export function LoginPage() {
     </div>
   );
 }
-

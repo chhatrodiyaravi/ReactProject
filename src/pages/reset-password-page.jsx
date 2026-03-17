@@ -1,6 +1,7 @@
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { useState } from "react";
+import { getPasswordChecks } from "../utils/validation";
 
 export function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
@@ -14,29 +15,7 @@ export function ResetPasswordPage() {
   const location = useLocation();
   const email = location.state?.email || "";
 
-  const validatePassword = (password) => {
-    const minLength = password.length >= 8;
-    const hasUpperCase = /[A-Z]/.test(password);
-    const hasLowerCase = /[a-z]/.test(password);
-    const hasNumber = /[0-9]/.test(password);
-    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(password);
-
-    return {
-      minLength,
-      hasUpperCase,
-      hasLowerCase,
-      hasNumber,
-      hasSpecialChar,
-      isValid:
-        minLength &&
-        hasUpperCase &&
-        hasLowerCase &&
-        hasNumber &&
-        hasSpecialChar,
-    };
-  };
-
-  const passwordStrength = validatePassword(newPassword);
+  const passwordStrength = getPasswordChecks(newPassword);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -229,4 +208,3 @@ function PasswordRequirement({ met, text }) {
     </div>
   );
 }
-

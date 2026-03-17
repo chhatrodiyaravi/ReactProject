@@ -149,7 +149,7 @@ export function HomePage() {
         >
           {sliderData.map((slide, index) => (
             <div key={slide.id} className="min-w-full relative">
-              <div className="relative h-[500px]">
+              <div className="relative h-[420px] sm:h-[500px]">
                 <img
                   src={slide.image}
                   alt={slide.title}
@@ -161,13 +161,13 @@ export function HomePage() {
               <div className="absolute inset-0 flex items-center">
                 <div className="max-w-7xl mx-auto px-4 py-12 w-full">
                   <h1
-                    className="text-4xl md:text-6xl font-bold mb-4 text-white drop-shadow-2xl"
+                    className="text-3xl sm:text-4xl md:text-6xl font-bold mb-4 text-white drop-shadow-2xl"
                     style={{ textShadow: "2px 2px 8px rgba(0,0,0,0.8)" }}
                   >
                     {slide.title}
                   </h1>
                   <p
-                    className="text-xl md:text-2xl mb-8 text-white drop-shadow-xl"
+                    className="text-base sm:text-xl md:text-2xl mb-6 sm:mb-8 text-white drop-shadow-xl"
                     style={{ textShadow: "1px 1px 6px rgba(0,0,0,0.8)" }}
                   >
                     {slide.subtitle}
@@ -189,7 +189,7 @@ export function HomePage() {
                       </div>
 
                       <div className="bg-white rounded-lg shadow-lg p-2">
-                        <div className="flex items-center">
+                        <div className="flex items-center gap-2">
                           <Search className="w-5 h-5 text-gray-400 mx-3" />
                           <input
                             type="text"
@@ -198,7 +198,7 @@ export function HomePage() {
                             onChange={(e) => setSearchQuery(e.target.value)}
                             className="flex-1 py-3 px-2 outline-none text-gray-800"
                           />
-                          <button className="bg-orange-600 text-white px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors">
+                          <button className="bg-orange-600 text-white px-4 sm:px-6 py-3 rounded-lg hover:bg-orange-700 transition-colors text-sm sm:text-base">
                             Search
                           </button>
                         </div>
@@ -353,4 +353,3 @@ export function HomePage() {
     </div>
   );
 }
-

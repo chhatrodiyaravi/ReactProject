@@ -1,5 +1,5 @@
 import { Star, Plus, Minus, ShoppingCart, ArrowLeft } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { Header } from "../components/header";
 import { Footer } from "../components/footer";
 import { ReviewForm } from "../components/review-form";
@@ -19,6 +19,8 @@ const getImageUrl = (imagePath) => {
 
 export function FoodDetailsPage() {
   const { id } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { token, isAuthenticated } = useAuth();
   const [quantity, setQuantity] = useState(1);
   const [showToast, setShowToast] = useState(false);
@@ -46,6 +48,14 @@ export function FoodDetailsPage() {
 
   const handleAddToCart = async () => {
     if (!isAuthenticated || !token || !foodItem?._id) {
+      if (!isAuthenticated || !token) {
+        navigate("/login", {
+          state: {
+            from: location.pathname,
+            message: "Please login to add items to cart.",
+          },
+        });
+      }
       return;
     }
 
@@ -244,4 +254,3 @@ export function FoodDetailsPage() {
     </div>
   );
 }
-

@@ -34,12 +34,14 @@ const getImageUrl = (imagePath) => {
 export function OwnerDashboardPage() {
   const navigate = useNavigate();
   const { logout, user, token } = useAuth();
+  const maxImageSize = 5 * 1024 * 1024;
   const [activeTab, setActiveTab] = useState("overview");
   const [orderFilter, setOrderFilter] = useState("all");
   const [isEditingRestaurant, setIsEditingRestaurant] = useState(false);
   const [restaurantData, setRestaurantData] = useState(null);
   const [updatingRestaurant, setUpdatingRestaurant] = useState(false);
   const [restaurantImg, setRestaurantImg] = useState(null);
+  const [restaurantFieldErrors, setRestaurantFieldErrors] = useState({});
 
   const [restaurants, setRestaurants] = useState([]);
   const [foods, setFoods] = useState([]);
@@ -199,22 +201,95 @@ export function OwnerDashboardPage() {
   const handleEditRestaurant = () => {
     setRestaurantData({ ...restaurants[0] });
     setRestaurantImg(null);
+    setRestaurantFieldErrors({});
     setIsEditingRestaurant(true);
+  };
+
+  const updateRestaurantField = (field, value) => {
+    setRestaurantData((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setRestaurantFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
+
+  const validateRestaurantData = () => {
+    const nextErrors = {};
+    const trimmedName = restaurantData?.name?.trim() || "";
+    const trimmedEmail = restaurantData?.email?.trim() || "";
+    const trimmedPhone = restaurantData?.phone?.trim() || "";
+    const trimmedDescription = restaurantData?.description?.trim() || "";
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneDigits = trimmedPhone.replace(/\D/g, "");
+
+    if (!trimmedName) {
+      nextErrors.name = "Restaurant name is required.";
+    } else if (trimmedName.length < 2) {
+      nextErrors.name = "Restaurant name must be at least 2 characters.";
+    } else if (trimmedName.length > 100) {
+      nextErrors.name = "Restaurant name must be 100 characters or fewer.";
+    }
+
+    if (!trimmedEmail) {
+      nextErrors.email = "Email is required.";
+    } else if (!emailPattern.test(trimmedEmail)) {
+      nextErrors.email = "Please enter a valid email address.";
+    }
+
+    if (!trimmedPhone) {
+      nextErrors.phone = "Phone number is required.";
+    } else if (phoneDigits.length < 10 || phoneDigits.length > 15) {
+      nextErrors.phone = "Phone number must contain 10 to 15 digits.";
+    }
+
+    if (!trimmedDescription) {
+      nextErrors.description = "Description is required.";
+    } else if (trimmedDescription.length < 10) {
+      nextErrors.description = "Description must be at least 10 characters.";
+    } else if (trimmedDescription.length > 500) {
+      nextErrors.description = "Description must be 500 characters or fewer.";
+    }
+
+    if (restaurantImg) {
+      if (!restaurantImg.type.startsWith("image/")) {
+        nextErrors.image = "Please upload a valid image file.";
+      } else if (restaurantImg.size > maxImageSize) {
+        nextErrors.image = "Image size must be 5MB or less.";
+      }
+    }
+
+    return nextErrors;
   };
 
   const handleSaveRestaurant = async () => {
     if (!restaurantData || !restaurants[0]) return;
 
+    const nextErrors = validateRestaurantData();
+    if (Object.keys(nextErrors).length > 0) {
+      setRestaurantFieldErrors(nextErrors);
+      setError("Please correct the restaurant details before saving.");
+      return;
+    }
+
     try {
       setUpdatingRestaurant(true);
       setError("");
       setSuccess("");
+      setRestaurantFieldErrors({});
 
       const updateBody = {
-        name: restaurantData.name,
-        description: restaurantData.description,
-        phone: restaurantData.phone,
-        email: restaurantData.email,
+        name: restaurantData.name.trim(),
+        description: restaurantData.description.trim(),
+        phone: restaurantData.phone.trim(),
+        email: restaurantData.email.trim(),
         address: restaurantData.address || {},
         cuisine: restaurantData.cuisine || [],
       };
@@ -249,6 +324,15 @@ export function OwnerDashboardPage() {
     const file = e.target.files?.[0];
     if (file) {
       setRestaurantImg(file);
+      setRestaurantFieldErrors((prev) => {
+        if (!prev.image) {
+          return prev;
+        }
+
+        const nextErrors = { ...prev };
+        delete nextErrors.image;
+        return nextErrors;
+      });
     }
   };
 
@@ -630,6 +714,11 @@ export function OwnerDashboardPage() {
                           JPG, PNG, GIF or WebP (max 5MB)
                         </p>
                       </label>
+                      {restaurantFieldErrors.image && (
+                        <p className="mt-3 text-sm text-red-600">
+                          {restaurantFieldErrors.image}
+                        </p>
+                      )}
                     </div>
 
                     {/* Restaurant Details */}
@@ -642,29 +731,42 @@ export function OwnerDashboardPage() {
                           type="text"
                           value={restaurantData.name || ""}
                           onChange={(e) =>
-                            setRestaurantData({
-                              ...restaurantData,
-                              name: e.target.value,
-                            })
+                            updateRestaurantField("name", e.target.value)
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            restaurantFieldErrors.name
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {restaurantFieldErrors.name && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {restaurantFieldErrors.name}
+                          </p>
+                        )}
                       </div>
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Email
                         </label>
                         <input
-                          type="email"
+                          type="text"
+                          inputMode="email"
                           value={restaurantData.email || ""}
                           onChange={(e) =>
-                            setRestaurantData({
-                              ...restaurantData,
-                              email: e.target.value,
-                            })
+                            updateRestaurantField("email", e.target.value)
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            restaurantFieldErrors.email
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {restaurantFieldErrors.email && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {restaurantFieldErrors.email}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -677,13 +779,19 @@ export function OwnerDashboardPage() {
                           type="tel"
                           value={restaurantData.phone || ""}
                           onChange={(e) =>
-                            setRestaurantData({
-                              ...restaurantData,
-                              phone: e.target.value,
-                            })
+                            updateRestaurantField("phone", e.target.value)
                           }
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                          className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                            restaurantFieldErrors.phone
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {restaurantFieldErrors.phone && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {restaurantFieldErrors.phone}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -694,14 +802,20 @@ export function OwnerDashboardPage() {
                       <textarea
                         value={restaurantData.description || ""}
                         onChange={(e) =>
-                          setRestaurantData({
-                            ...restaurantData,
-                            description: e.target.value,
-                          })
+                          updateRestaurantField("description", e.target.value)
                         }
                         rows={4}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className={`w-full px-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 ${
+                          restaurantFieldErrors.description
+                            ? "border-red-400"
+                            : "border-gray-300"
+                        }`}
                       />
+                      {restaurantFieldErrors.description && (
+                        <p className="mt-2 text-sm text-red-600">
+                          {restaurantFieldErrors.description}
+                        </p>
+                      )}
                     </div>
 
                     {/* Action Buttons */}
@@ -719,6 +833,7 @@ export function OwnerDashboardPage() {
                           setIsEditingRestaurant(false);
                           setRestaurantData(null);
                           setRestaurantImg(null);
+                          setRestaurantFieldErrors({});
                         }}
                         className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors flex items-center justify-center gap-2"
                       >
@@ -820,4 +935,3 @@ function SmallStat({ title, value }) {
     </div>
   );
 }
-

@@ -9,12 +9,14 @@ export function AddFoodPage() {
   const navigate = useNavigate();
   const { foodId } = useParams();
   const isEditMode = Boolean(foodId);
+  const maxImageSize = 5 * 1024 * 1024;
 
   const [restaurants, setRestaurants] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [existingImage, setExistingImage] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [form, setForm] = useState({
     name: "",
@@ -87,24 +89,88 @@ export function AddFoodPage() {
 
   const onChange = (field, value) => {
     setForm((prev) => ({ ...prev, [field]: value }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
+
+  const validateForm = () => {
+    const nextErrors = {};
+    const trimmedName = form.name.trim();
+    const trimmedDescription = form.description.trim();
+    const parsedPrice = Number(form.price);
+
+    if (!form.restaurant) {
+      nextErrors.restaurant = "Please select a restaurant.";
+    }
+
+    if (!trimmedName) {
+      nextErrors.name = "Food name is required.";
+    } else if (trimmedName.length < 2) {
+      nextErrors.name = "Food name must be at least 2 characters.";
+    } else if (trimmedName.length > 100) {
+      nextErrors.name = "Food name must be 100 characters or fewer.";
+    }
+
+    if (form.price === "") {
+      nextErrors.price = "Price is required.";
+    } else if (!Number.isFinite(parsedPrice)) {
+      nextErrors.price = "Price must be a valid number.";
+    } else if (parsedPrice <= 0) {
+      nextErrors.price = "Price must be greater than 0.";
+    }
+
+    if (!form.category) {
+      nextErrors.category = "Please choose a category.";
+    } else if (!categoryOptions.includes(form.category)) {
+      nextErrors.category = "Please choose a valid category.";
+    }
+
+    if (!trimmedDescription) {
+      nextErrors.description = "Description is required.";
+    } else if (trimmedDescription.length < 10) {
+      nextErrors.description = "Description must be at least 10 characters.";
+    } else if (trimmedDescription.length > 500) {
+      nextErrors.description = "Description must be 500 characters or fewer.";
+    }
+
+    if (form.image) {
+      if (!form.image.type.startsWith("image/")) {
+        nextErrors.image = "Please upload a valid image file.";
+      } else if (form.image.size > maxImageSize) {
+        nextErrors.image = "Image size must be 5MB or less.";
+      }
+    }
+
+    return nextErrors;
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
-    if (!form.restaurant) {
-      setError("Please select a restaurant");
+    const nextErrors = validateForm();
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError("Please correct the highlighted fields.");
       return;
     }
+
+    setFieldErrors({});
 
     try {
       setSaving(true);
       const payload = new FormData();
-      payload.append("name", form.name);
-      payload.append("price", String(form.price));
+      payload.append("name", form.name.trim());
+      payload.append("price", String(Number(form.price)));
       payload.append("category", form.category);
-      payload.append("description", form.description);
+      payload.append("description", form.description.trim());
       payload.append("restaurant", form.restaurant);
       payload.append("isVegetarian", String(form.foodType === "veg"));
       if (form.image) {
@@ -168,7 +234,7 @@ export function AddFoodPage() {
               </div>
             </div>
           ) : (
-            <form className="space-y-6" onSubmit={handleSubmit}>
+            <form className="space-y-6" onSubmit={handleSubmit} noValidate>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Restaurant *
@@ -176,8 +242,11 @@ export function AddFoodPage() {
                 <select
                   value={form.restaurant}
                   onChange={(e) => onChange("restaurant", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white"
-                  required
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none bg-white ${
+                    fieldErrors.restaurant
+                      ? "border-red-400"
+                      : "border-gray-300"
+                  }`}
                 >
                   <option value="">Select your restaurant</option>
                   {restaurants.map((restaurant) => (
@@ -192,6 +261,11 @@ export function AddFoodPage() {
                     {restaurants.length > 1 ? "s" : ""} available
                   </p>
                 )}
+                {fieldErrors.restaurant && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.restaurant}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -203,9 +277,15 @@ export function AddFoodPage() {
                   value={form.name}
                   onChange={(e) => onChange("name", e.target.value)}
                   placeholder="Enter food item name"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  required
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                    fieldErrors.name ? "border-red-400" : "border-gray-300"
+                  }`}
                 />
+                {fieldErrors.name && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -217,10 +297,15 @@ export function AddFoodPage() {
                   value={form.price}
                   onChange={(e) => onChange("price", e.target.value)}
                   placeholder="Enter price"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  required
-                  min={1}
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                    fieldErrors.price ? "border-red-400" : "border-gray-300"
+                  }`}
                 />
+                {fieldErrors.price && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.price}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -230,8 +315,9 @@ export function AddFoodPage() {
                 <select
                   value={form.category}
                   onChange={(e) => onChange("category", e.target.value)}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
-                  required
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none ${
+                    fieldErrors.category ? "border-red-400" : "border-gray-300"
+                  }`}
                 >
                   <option value="">Select a category</option>
                   {categoryOptions.map((option) => (
@@ -240,6 +326,11 @@ export function AddFoodPage() {
                     </option>
                   ))}
                 </select>
+                {fieldErrors.category && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.category}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -281,16 +372,28 @@ export function AddFoodPage() {
                   value={form.description}
                   onChange={(e) => onChange("description", e.target.value)}
                   placeholder="Enter food description"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none"
-                  required
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none resize-none ${
+                    fieldErrors.description
+                      ? "border-red-400"
+                      : "border-gray-300"
+                  }`}
                 ></textarea>
+                {fieldErrors.description && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.description}
+                  </p>
+                )}
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Upload Image
                 </label>
-                <label className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer block">
+                <label
+                  className={`border-2 border-dashed rounded-lg p-8 text-center hover:border-blue-500 transition-colors cursor-pointer block ${
+                    fieldErrors.image ? "border-red-400" : "border-gray-300"
+                  }`}
+                >
                   <Upload className="w-12 h-12 text-gray-400 mx-auto mb-3" />
                   <p className="text-gray-600 mb-2">
                     Click to upload or drag and drop
@@ -315,6 +418,11 @@ export function AddFoodPage() {
                     </p>
                   )}
                 </label>
+                {fieldErrors.image && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.image}
+                  </p>
+                )}
               </div>
 
               <div className="flex gap-4 pt-4">
@@ -344,4 +452,3 @@ export function AddFoodPage() {
     </div>
   );
 }
-

@@ -1,6 +1,7 @@
 import { Link, useNavigate } from "react-router-dom";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { useState } from "react";
+import { isValidEmail } from "../utils/validation";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
@@ -8,8 +9,6 @@ export function ForgotPasswordPage() {
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
   const navigate = useNavigate();
-
-  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -70,7 +69,8 @@ export function ForgotPasswordPage() {
                 <div className="relative">
                   <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                   <input
-                    type="email"
+                    type="text"
+                    inputMode="email"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="Enter your registered email"
@@ -129,4 +129,3 @@ export function ForgotPasswordPage() {
     </div>
   );
 }
-

@@ -61,14 +61,14 @@ export function Header({ cartItemCount = 0 }) {
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-3">
+      <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 flex-shrink-0">
             <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-full flex items-center justify-center shadow-lg">
               <span className="text-white font-bold text-xl">F</span>
             </div>
-            <span className="text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent">
+            <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-orange-600 to-orange-500 bg-clip-text text-transparent truncate max-w-[140px] sm:max-w-none">
               FoodHub
             </span>
           </Link>
@@ -418,4 +418,3 @@ export function Header({ cartItemCount = 0 }) {
     </header>
   );
 }
-

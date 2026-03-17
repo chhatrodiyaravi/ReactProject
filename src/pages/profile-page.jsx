@@ -15,6 +15,7 @@ import { Footer } from "../components/footer";
 import { useAuth } from "../context/AuthContext";
 import { useEffect, useMemo, useState } from "react";
 import { orderApi } from "../services/api";
+import { isValidName, isValidPhone } from "../utils/validation";
 
 const getImageUrl = (imagePath) => {
   if (!imagePath) return "";
@@ -45,6 +46,7 @@ export function ProfilePage() {
   const [isEditing, setIsEditing] = useState(false);
   const [orders, setOrders] = useState([]);
   const [saveError, setSaveError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [isSaving, setIsSaving] = useState(false);
   const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState("");
@@ -101,12 +103,38 @@ export function ProfilePage() {
 
   const handleSave = async () => {
     setSaveError("");
+    setFieldErrors({});
     setIsSaving(true);
 
+    const nextErrors = {};
+
+    if (!editedUser.name.trim()) {
+      nextErrors.name = "Name is required.";
+    } else if (!isValidName(editedUser.name)) {
+      nextErrors.name = "Please enter a valid name.";
+    }
+
+    if (editedUser.phone.trim() && !isValidPhone(editedUser.phone)) {
+      nextErrors.phone = "Phone number must contain exactly 10 digits.";
+    }
+
+    if (!editedUser.address.trim()) {
+      nextErrors.address = "Address is required.";
+    } else if (editedUser.address.trim().length < 5) {
+      nextErrors.address = "Address must be at least 5 characters.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setSaveError("Please correct the highlighted fields.");
+      setIsSaving(false);
+      return;
+    }
+
     const payload = new FormData();
-    payload.append("name", editedUser.name);
-    payload.append("phone", editedUser.phone);
-    payload.append("address[street]", editedUser.address);
+    payload.append("name", editedUser.name.trim());
+    payload.append("phone", editedUser.phone.trim());
+    payload.append("address[street]", editedUser.address.trim());
 
     if (avatarFile) {
       payload.append("avatar", avatarFile);
@@ -251,8 +279,13 @@ export function ProfilePage() {
                         onChange={(e) =>
                           setEditedUser({ ...editedUser, name: e.target.value })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${fieldErrors.name ? "border-red-400" : "border-gray-300"}`}
                       />
+                      {fieldErrors.name && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors.name}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -278,8 +311,13 @@ export function ProfilePage() {
                             phone: e.target.value,
                           })
                         }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${fieldErrors.phone ? "border-red-400" : "border-gray-300"}`}
                       />
+                      {fieldErrors.phone && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors.phone}
+                        </p>
+                      )}
                     </div>
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -294,8 +332,13 @@ export function ProfilePage() {
                           })
                         }
                         rows={3}
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                        className={`w-full px-3 py-2 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 ${fieldErrors.address ? "border-red-400" : "border-gray-300"}`}
                       />
+                      {fieldErrors.address && (
+                        <p className="mt-1 text-xs text-red-600">
+                          {fieldErrors.address}
+                        </p>
+                      )}
                     </div>
                     <div className="flex gap-2">
                       <button

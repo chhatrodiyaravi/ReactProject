@@ -7,7 +7,7 @@ import {
   ArrowLeft,
   Search,
 } from "lucide-react";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useNavigate, useParams } from "react-router-dom";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { cartApi, foodApi, restaurantApi } from "../services/api";
@@ -22,6 +22,8 @@ const getImageUrl = (imagePath) => {
 
 export function MenuPage() {
   const { id: restaurantId } = useParams();
+  const navigate = useNavigate();
+  const location = useLocation();
   const { token, isAuthenticated } = useAuth();
   const [restaurant, setRestaurant] = useState(null);
   const [menuItems, setMenuItems] = useState([]);
@@ -98,6 +100,12 @@ export function MenuPage() {
 
   const addToCart = async (itemId) => {
     if (!isAuthenticated || !token) {
+      navigate("/login", {
+        state: {
+          from: location.pathname,
+          message: "Please login to add items to cart.",
+        },
+      });
       return;
     }
 

@@ -2,6 +2,7 @@ import { Link, useNavigate } from "react-router-dom";
 import { Mail, Lock, Shield, AlertCircle, Eye, EyeOff } from "lucide-react";
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
+import { isValidEmail } from "../../utils/validation";
 
 export function AdminLoginPage() {
   const [email, setEmail] = useState("");
@@ -11,8 +12,6 @@ export function AdminLoginPage() {
   const [loading, setLoading] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
-
-  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -77,7 +76,8 @@ export function AdminLoginPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter admin email"
@@ -147,4 +147,3 @@ export function AdminLoginPage() {
     </div>
   );
 }
-

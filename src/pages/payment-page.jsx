@@ -6,13 +6,24 @@ import {
   AlertCircle,
   Lock,
   Banknote,
+  ArrowLeft,
 } from "lucide-react";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import {
+  formatCardNumber,
+  formatExpiryDate,
+  isValidCardholderName,
+  isValidCardNumber,
+  isValidCvv,
+  isValidExpiryDate,
+  isValidUpi,
+} from "../utils/validation";
 
 export function PaymentPage({
   amount = 774,
   onSuccess,
+  onBack,
   paymentMethod: initialPaymentMethod = "upi",
 }) {
   const navigate = useNavigate();
@@ -20,6 +31,7 @@ export function PaymentPage({
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   // Form states
   const [upiId, setUpiId] = useState("");
@@ -29,52 +41,40 @@ export function PaymentPage({
   const [cvv, setCvv] = useState("");
   const [walletProvider, setWalletProvider] = useState("paytm");
 
-  const formatCardNumber = (value) => {
-    const numbers = value.replace(/\s/g, "");
-    const groups = numbers.match(/.{1,4}/g);
-    return groups ? groups.join(" ") : numbers;
-  };
-
-  const formatExpiryDate = (value) => {
-    const numbers = value.replace(/\D/g, "");
-    if (numbers.length >= 2) {
-      return numbers.slice(0, 2) + "/" + numbers.slice(2, 4);
-    }
-    return numbers;
-  };
-
-  const validateUPI = (upi) => {
-    const upiRegex = /^[\w.-]+@[\w.-]+$/;
-    return upiRegex.test(upi);
-  };
-
-  const validateCard = () => {
-    const cardNumberClean = cardNumber.replace(/\s/g, "");
-    return (
-      cardNumberClean.length === 16 &&
-      cardName.length > 0 &&
-      expiryDate.length === 5 &&
-      cvv.length === 3
-    );
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
 
-    // Validate based on payment method
-    if (paymentMethod === "upi" && !validateUPI(upiId)) {
-      setError("Please enter a valid UPI ID");
-      return;
+    const nextErrors = {};
+
+    if (paymentMethod === "upi" && !isValidUpi(upiId)) {
+      nextErrors.upiId = "Please enter a valid UPI ID.";
     }
 
-    if (paymentMethod === "card" && !validateCard()) {
-      setError("Please fill all card details correctly");
-      return;
+    if (paymentMethod === "card") {
+      if (!isValidCardNumber(cardNumber)) {
+        nextErrors.cardNumber = "Card number must contain exactly 16 digits.";
+      }
+      if (!isValidCardholderName(cardName)) {
+        nextErrors.cardName = "Please enter a valid cardholder name.";
+      }
+      if (!isValidExpiryDate(expiryDate)) {
+        nextErrors.expiryDate =
+          "Please enter a valid future expiry date in MM/YY format.";
+      }
+      if (!isValidCvv(cvv)) {
+        nextErrors.cvv = "CVV must contain exactly 3 digits.";
+      }
     }
 
     if (paymentMethod === "wallet" && !walletProvider) {
-      setError("Please select a wallet provider");
+      nextErrors.walletProvider = "Please select a wallet provider.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError("Please correct the payment details.");
       return;
     }
 
@@ -123,6 +123,17 @@ export function PaymentPage({
 
   return (
     <div className="bg-white rounded-lg shadow-md p-6">
+      {onBack && (
+        <button
+          type="button"
+          onClick={onBack}
+          className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-600 mb-6"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          <span>Back to Delivery Details</span>
+        </button>
+      )}
+
       <div className="flex items-center gap-2 mb-6">
         <Lock className="w-5 h-5 text-green-600" />
         <h2 className="text-xl font-semibold text-gray-900">Secure Payment</h2>
@@ -277,10 +288,16 @@ export function PaymentPage({
               <input
                 type="text"
                 value={upiId}
-                onChange={(e) => setUpiId(e.target.value)}
+                onChange={(e) => {
+                  setUpiId(e.target.value);
+                  setFieldErrors((prev) => ({ ...prev, upiId: undefined }));
+                }}
                 placeholder="yourname@upi"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.upiId ? "border-red-400" : "border-gray-300"}`}
               />
+              {fieldErrors.upiId && (
+                <p className="mt-2 text-sm text-red-600">{fieldErrors.upiId}</p>
+              )}
               <p className="text-xs text-gray-500 mt-1">
                 Example: yourname@paytm, yourname@googlepay
               </p>
@@ -300,13 +317,20 @@ export function PaymentPage({
                 value={cardNumber}
                 onChange={(e) => {
                   const formatted = formatCardNumber(e.target.value);
-                  if (formatted.replace(/\s/g, "").length <= 16) {
-                    setCardNumber(formatted);
-                  }
+                  setCardNumber(formatted);
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    cardNumber: undefined,
+                  }));
                 }}
                 placeholder="1234 5678 9012 3456"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.cardNumber ? "border-red-400" : "border-gray-300"}`}
               />
+              {fieldErrors.cardNumber && (
+                <p className="mt-2 text-sm text-red-600">
+                  {fieldErrors.cardNumber}
+                </p>
+              )}
             </div>
 
             <div>
@@ -316,10 +340,18 @@ export function PaymentPage({
               <input
                 type="text"
                 value={cardName}
-                onChange={(e) => setCardName(e.target.value.toUpperCase())}
+                onChange={(e) => {
+                  setCardName(e.target.value.toUpperCase());
+                  setFieldErrors((prev) => ({ ...prev, cardName: undefined }));
+                }}
                 placeholder="JOHN DOE"
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.cardName ? "border-red-400" : "border-gray-300"}`}
               />
+              {fieldErrors.cardName && (
+                <p className="mt-2 text-sm text-red-600">
+                  {fieldErrors.cardName}
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 gap-4">
@@ -330,13 +362,22 @@ export function PaymentPage({
                 <input
                   type="text"
                   value={expiryDate}
-                  onChange={(e) =>
-                    setExpiryDate(formatExpiryDate(e.target.value))
-                  }
+                  onChange={(e) => {
+                    setExpiryDate(formatExpiryDate(e.target.value));
+                    setFieldErrors((prev) => ({
+                      ...prev,
+                      expiryDate: undefined,
+                    }));
+                  }}
                   placeholder="MM/YY"
                   maxLength={5}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.expiryDate ? "border-red-400" : "border-gray-300"}`}
                 />
+                {fieldErrors.expiryDate && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.expiryDate}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -349,12 +390,16 @@ export function PaymentPage({
                   onChange={(e) => {
                     if (e.target.value.length <= 3) {
                       setCvv(e.target.value.replace(/\D/g, ""));
+                      setFieldErrors((prev) => ({ ...prev, cvv: undefined }));
                     }
                   }}
                   placeholder="123"
                   maxLength={3}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.cvv ? "border-red-400" : "border-gray-300"}`}
                 />
+                {fieldErrors.cvv && (
+                  <p className="mt-2 text-sm text-red-600">{fieldErrors.cvv}</p>
+                )}
               </div>
             </div>
           </div>
@@ -369,8 +414,14 @@ export function PaymentPage({
               </label>
               <select
                 value={walletProvider}
-                onChange={(e) => setWalletProvider(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                onChange={(e) => {
+                  setWalletProvider(e.target.value);
+                  setFieldErrors((prev) => ({
+                    ...prev,
+                    walletProvider: undefined,
+                  }));
+                }}
+                className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${fieldErrors.walletProvider ? "border-red-400" : "border-gray-300"}`}
               >
                 <option value="paytm">Paytm Wallet</option>
                 <option value="amazonpay">Amazon Pay</option>
@@ -380,6 +431,11 @@ export function PaymentPage({
               <p className="text-xs text-gray-500 mt-2">
                 You will be redirected to complete the payment
               </p>
+              {fieldErrors.walletProvider && (
+                <p className="mt-2 text-sm text-red-600">
+                  {fieldErrors.walletProvider}
+                </p>
+              )}
             </div>
           </div>
         )}
@@ -410,4 +466,3 @@ export function PaymentPage({
     </div>
   );
 }
-

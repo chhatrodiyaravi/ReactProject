@@ -136,7 +136,7 @@ export function CartPage() {
               {cartItems.map((item) => (
                 <div
                   key={item._id}
-                  className="bg-white rounded-lg shadow-md p-4 flex items-center gap-4 hover:shadow-lg transition-shadow"
+                  className="bg-white rounded-lg shadow-md p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-lg transition-shadow"
                 >
                   <img
                     src={
@@ -145,10 +145,10 @@ export function CartPage() {
                         : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop"
                     }
                     alt={item.food?.name || "Food"}
-                    className="w-24 h-24 object-cover rounded-lg flex-shrink-0 shadow-sm"
+                    className="w-full h-40 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0 shadow-sm"
                   />
 
-                  <div className="flex-1">
+                  <div className="flex-1 w-full">
                     <h3 className="font-semibold text-gray-900 mb-1 text-lg">
                       {item.food?.name}
                     </h3>
@@ -157,7 +157,7 @@ export function CartPage() {
                     </p>
                   </div>
 
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
                     <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
                       <button
                         onClick={() =>
@@ -240,4 +240,3 @@ export function CartPage() {
     </div>
   );
 }
-

@@ -6,6 +6,7 @@ import { PaymentPage } from "./payment-page";
 import { useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/AuthContext";
 import { cartApi, orderApi } from "../services/api";
+import { isValidName, isValidPhone, isValidPinCode } from "../utils/validation";
 
 export function CheckoutPage() {
   const navigate = useNavigate();
@@ -13,6 +14,7 @@ export function CheckoutPage() {
   const [showPayment, setShowPayment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
   const [orderId, setOrderId] = useState("");
   const [cart, setCart] = useState(null);
   const [paymentMethod, setPaymentMethod] = useState("cod");
@@ -31,6 +33,22 @@ export function CheckoutPage() {
     state: user?.address?.state || "",
     zipCode: user?.address?.zipCode || "",
   });
+
+  const updateAddressField = (field, value) => {
+    setAddressForm((prev) => ({
+      ...prev,
+      [field]: value,
+    }));
+    setFieldErrors((prev) => {
+      if (!prev[field]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[field];
+      return nextErrors;
+    });
+  };
 
   const fetchCart = async () => {
     try {
@@ -160,6 +178,7 @@ export function CheckoutPage() {
   const handleProceedToPayment = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
 
     if (!orderSummary.items.length) {
       setError("Your cart is empty");
@@ -167,30 +186,35 @@ export function CheckoutPage() {
     }
 
     const isBlank = (value) => !String(value || "").trim();
-    const phoneValid = /^\d{10}$/.test(
-      String(addressForm.phone || "").replace(/\D/g, ""),
-    );
-    const zipValid = /^\d{6}$/.test(String(addressForm.zipCode || "").trim());
-
-    if (
-      isBlank(addressForm.fullName) ||
-      isBlank(addressForm.phone) ||
-      isBlank(addressForm.street) ||
-      isBlank(addressForm.city) ||
-      isBlank(addressForm.state) ||
-      isBlank(addressForm.zipCode)
-    ) {
-      setError("Please fill in all delivery address fields");
-      return;
+    const nextErrors = {};
+    if (isBlank(addressForm.fullName)) {
+      nextErrors.fullName = "Full name is required.";
+    } else if (!isValidName(addressForm.fullName)) {
+      nextErrors.fullName = "Please enter a valid full name.";
+    }
+    if (isBlank(addressForm.phone)) {
+      nextErrors.phone = "Phone number is required.";
+    } else if (!isValidPhone(addressForm.phone)) {
+      nextErrors.phone = "Please enter a valid 10-digit phone number.";
+    }
+    if (isBlank(addressForm.street)) {
+      nextErrors.street = "Street address is required.";
+    }
+    if (isBlank(addressForm.city)) {
+      nextErrors.city = "City is required.";
+    }
+    if (isBlank(addressForm.state)) {
+      nextErrors.state = "State is required.";
+    }
+    if (isBlank(addressForm.zipCode)) {
+      nextErrors.zipCode = "PIN code is required.";
+    } else if (!isValidPinCode(addressForm.zipCode)) {
+      nextErrors.zipCode = "Please enter a valid 6-digit PIN code.";
     }
 
-    if (!phoneValid) {
-      setError("Please enter a valid 10-digit phone number");
-      return;
-    }
-
-    if (!zipValid) {
-      setError("Please enter a valid 6-digit PIN code");
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setError("Please correct the delivery details before proceeding.");
       return;
     }
 
@@ -208,10 +232,10 @@ export function CheckoutPage() {
         body: {
           orderItems: orderSummary.items,
           deliveryAddress: {
-            street: addressForm.street,
-            city: addressForm.city,
-            state: addressForm.state,
-            zipCode: addressForm.zipCode,
+            street: addressForm.street.trim(),
+            city: addressForm.city.trim(),
+            state: addressForm.state.trim(),
+            zipCode: addressForm.zipCode.trim(),
             country: "India",
           },
           paymentMethod: paymentMethodMap[paymentMethod] || "Cash on Delivery",
@@ -230,7 +254,22 @@ export function CheckoutPage() {
     }
   };
 
-  const handlePaymentSuccess = () => {
+  const handlePaymentSuccess = async () => {
+    try {
+      await cartApi.clear(token);
+      setCart((prev) =>
+        prev
+          ? {
+              ...prev,
+              items: [],
+              totalPrice: 0,
+            }
+          : prev,
+      );
+    } catch (err) {
+      console.error("Failed to clear cart after order:", err);
+    }
+
     navigate(`/order-confirmation?orderId=${orderId}`);
   };
 
@@ -244,13 +283,27 @@ export function CheckoutPage() {
       <Header cartItemCount={cartCount} />
 
       <div className="max-w-7xl mx-auto px-4 py-8 flex-grow">
-        <Link
-          to="/cart"
-          className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-600 mb-6"
-        >
-          <ArrowLeft className="w-5 h-5" />
-          <span>Back to Cart</span>
-        </Link>
+        {showPayment ? (
+          <button
+            type="button"
+            onClick={() => {
+              setShowPayment(false);
+              setError("");
+            }}
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-600 mb-6"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Delivery Details</span>
+          </button>
+        ) : (
+          <Link
+            to="/cart"
+            className="inline-flex items-center gap-2 text-gray-600 hover:text-orange-600 mb-6"
+          >
+            <ArrowLeft className="w-5 h-5" />
+            <span>Back to Cart</span>
+          </Link>
+        )}
 
         <h1 className="text-3xl font-bold text-gray-900 mb-8">
           {showPayment ? "Payment" : "Checkout"}
@@ -260,13 +313,15 @@ export function CheckoutPage() {
           <div className="text-center py-16 text-gray-600">
             Loading checkout...
           </div>
-        ) : error ? (
-          <div className="text-center py-16 text-red-600">{error}</div>
         ) : showPayment ? (
           <div className="max-w-2xl mx-auto">
             <PaymentPage
               amount={orderSummary.total}
               paymentMethod={paymentMethod}
+              onBack={() => {
+                setShowPayment(false);
+                setError("");
+              }}
               onSuccess={(selectedPayment) => {
                 if (selectedPayment) {
                   setPaymentMethod(selectedPayment);
@@ -280,6 +335,12 @@ export function CheckoutPage() {
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
               <div className="lg:col-span-2 space-y-6">
                 <div className="bg-white rounded-lg shadow-md p-6">
+                  {error && (
+                    <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-600">
+                      {error}
+                    </div>
+                  )}
+
                   <div className="flex items-center gap-2 mb-4">
                     <MapPin className="w-5 h-5 text-orange-600" />
                     <h2 className="text-xl font-semibold text-gray-900">
@@ -297,13 +358,19 @@ export function CheckoutPage() {
                           type="text"
                           value={addressForm.fullName}
                           onChange={(e) =>
-                            setAddressForm((prev) => ({
-                              ...prev,
-                              fullName: e.target.value,
-                            }))
+                            updateAddressField("fullName", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                            fieldErrors.fullName
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {fieldErrors.fullName && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {fieldErrors.fullName}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -314,13 +381,19 @@ export function CheckoutPage() {
                           type="tel"
                           value={addressForm.phone}
                           onChange={(e) =>
-                            setAddressForm((prev) => ({
-                              ...prev,
-                              phone: e.target.value,
-                            }))
+                            updateAddressField("phone", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                            fieldErrors.phone
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {fieldErrors.phone && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {fieldErrors.phone}
+                          </p>
+                        )}
                       </div>
                     </div>
 
@@ -332,13 +405,19 @@ export function CheckoutPage() {
                         type="text"
                         value={addressForm.street}
                         onChange={(e) =>
-                          setAddressForm((prev) => ({
-                            ...prev,
-                            street: e.target.value,
-                          }))
+                          updateAddressField("street", e.target.value)
                         }
-                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                        className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                          fieldErrors.street
+                            ? "border-red-400"
+                            : "border-gray-300"
+                        }`}
                       />
+                      {fieldErrors.street && (
+                        <p className="mt-2 text-sm text-red-600">
+                          {fieldErrors.street}
+                        </p>
+                      )}
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -350,13 +429,19 @@ export function CheckoutPage() {
                           type="text"
                           value={addressForm.city}
                           onChange={(e) =>
-                            setAddressForm((prev) => ({
-                              ...prev,
-                              city: e.target.value,
-                            }))
+                            updateAddressField("city", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                            fieldErrors.city
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {fieldErrors.city && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {fieldErrors.city}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -367,13 +452,19 @@ export function CheckoutPage() {
                           type="text"
                           value={addressForm.state}
                           onChange={(e) =>
-                            setAddressForm((prev) => ({
-                              ...prev,
-                              state: e.target.value,
-                            }))
+                            updateAddressField("state", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                            fieldErrors.state
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {fieldErrors.state && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {fieldErrors.state}
+                          </p>
+                        )}
                       </div>
 
                       <div>
@@ -384,13 +475,19 @@ export function CheckoutPage() {
                           type="text"
                           value={addressForm.zipCode}
                           onChange={(e) =>
-                            setAddressForm((prev) => ({
-                              ...prev,
-                              zipCode: e.target.value,
-                            }))
+                            updateAddressField("zipCode", e.target.value)
                           }
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                          className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none ${
+                            fieldErrors.zipCode
+                              ? "border-red-400"
+                              : "border-gray-300"
+                          }`}
                         />
+                        {fieldErrors.zipCode && (
+                          <p className="mt-2 text-sm text-red-600">
+                            {fieldErrors.zipCode}
+                          </p>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -564,4 +661,3 @@ export function CheckoutPage() {
     </div>
   );
 }
-

@@ -20,7 +20,12 @@ import { adminApi, orderApi, userApi } from "../../services/api";
 export function NewAdminDashboard() {
   const navigate = useNavigate();
   const { logout, user, token } = useAuth();
-  const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [sidebarOpen, setSidebarOpen] = useState(() => {
+    if (typeof window === "undefined") {
+      return true;
+    }
+    return window.innerWidth >= 1024;
+  });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
   const [restaurantStatusFilter, setRestaurantStatusFilter] =
@@ -63,6 +68,17 @@ export function NewAdminDashboard() {
       fetchAll();
     }
   }, [token, restaurantStatusFilter]);
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (window.innerWidth >= 1024) {
+        setSidebarOpen(true);
+      }
+    };
+
+    window.addEventListener("resize", handleResize);
+    return () => window.removeEventListener("resize", handleResize);
+  }, []);
 
   const stats = useMemo(() => {
     const today = new Date().toDateString();
@@ -171,9 +187,20 @@ export function NewAdminDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex">
+      {sidebarOpen && (
+        <button
+          type="button"
+          aria-label="Close sidebar"
+          onClick={() => setSidebarOpen(false)}
+          className="fixed inset-0 bg-black/40 z-30 lg:hidden"
+        />
+      )}
+
       <aside
-        className={`bg-gray-900 text-white fixed lg:sticky top-0 h-screen transition-all duration-300 z-40 ${
-          sidebarOpen ? "w-64" : "w-0 lg:w-20"
+        className={`bg-gray-900 text-white fixed lg:sticky left-0 top-0 h-screen transition-all duration-300 z-40 overflow-hidden ${
+          sidebarOpen
+            ? "w-64 translate-x-0"
+            : "w-64 -translate-x-full lg:translate-x-0 lg:w-20"
         }`}
       >
         <div className="flex flex-col h-full">
@@ -223,7 +250,7 @@ export function NewAdminDashboard() {
 
       <div className="flex-1 flex flex-col">
         <header className="bg-white shadow-sm sticky top-0 z-30">
-          <div className="flex items-center justify-between px-6 py-4">
+          <div className="flex items-center justify-between px-4 sm:px-6 py-4">
             <div className="flex items-center gap-4">
               <button
                 onClick={() => setSidebarOpen(!sidebarOpen)}
@@ -231,7 +258,7 @@ export function NewAdminDashboard() {
               >
                 <Menu className="w-6 h-6" />
               </button>
-              <h1 className="text-2xl font-bold text-gray-900">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900">
                 Admin Dashboard
               </h1>
             </div>
@@ -250,7 +277,7 @@ export function NewAdminDashboard() {
           </div>
         </header>
 
-        <main className="flex-1 p-6 overflow-y-auto">
+        <main className="flex-1 p-4 sm:p-6 overflow-y-auto">
           {error && (
             <div className="mb-4 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-red-600">
               {error}
@@ -469,4 +496,3 @@ function DataTable({ columns, rows }) {
     </div>
   );
 }
-

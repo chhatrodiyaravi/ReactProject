@@ -14,6 +14,13 @@ import {
 import { useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import { restaurantApi } from "../../services/api";
+import {
+  isValidCity,
+  isValidEmail,
+  isValidName,
+  isValidPassword,
+  isValidPhone,
+} from "../../utils/validation";
 
 export function OwnerRegisterPage() {
   const [name, setName] = useState("");
@@ -28,9 +35,6 @@ export function OwnerRegisterPage() {
   const [loading, setLoading] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
-
-  const isValidEmail = (value) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  const isValidPhone = (value) => /^\d{10}$/.test(value.replace(/\D/g, ""));
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -51,8 +55,27 @@ export function OwnerRegisterPage() {
       return;
     }
 
-    if (payload.name.length < 3) {
-      setError("Full name must be at least 3 characters long");
+    if (!isValidName(payload.name)) {
+      setError(
+        "Full name must be at least 3 characters and contain only valid letters",
+      );
+      return;
+    }
+
+    if (!isValidName(payload.restaurantName, 2)) {
+      setError(
+        "Restaurant name must be at least 2 characters and contain only valid letters",
+      );
+      return;
+    }
+
+    if (payload.restaurantDescription.length < 10) {
+      setError("Restaurant description must be at least 10 characters long");
+      return;
+    }
+
+    if (!isValidCity(payload.restaurantCity)) {
+      setError("Please enter a valid city name");
       return;
     }
 
@@ -66,8 +89,10 @@ export function OwnerRegisterPage() {
       return;
     }
 
-    if (payload.password.length < 6) {
-      setError("Password must be at least 6 characters long");
+    if (!isValidPassword(payload.password)) {
+      setError(
+        "Password must be at least 8 characters and include uppercase, lowercase, number, and special character",
+      );
       return;
     }
 
@@ -214,7 +239,8 @@ export function OwnerRegisterPage() {
               <div className="relative">
                 <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="Enter restaurant email"
@@ -233,7 +259,7 @@ export function OwnerRegisterPage() {
                   type="tel"
                   value={phone}
                   onChange={(e) => setPhone(e.target.value)}
-                  placeholder="Enter phone number"
+                  placeholder="Enter 10-digit phone number"
                   className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none"
                 />
               </div>
@@ -297,4 +323,3 @@ export function OwnerRegisterPage() {
     </div>
   );
 }
-

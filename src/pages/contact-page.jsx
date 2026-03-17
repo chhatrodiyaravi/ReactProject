@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { useState } from "react";
 import { contactApi } from "../services/api";
+import { isValidEmail, isValidName, isValidPhone } from "../utils/validation";
 
 export function ContactPage() {
   const [formData, setFormData] = useState({
@@ -24,40 +25,77 @@ export function ContactPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const handleChange = (e) => {
     setFormData({
       ...formData,
       [e.target.name]: e.target.value,
     });
+    setFieldErrors((prev) => {
+      if (!prev[e.target.name]) {
+        return prev;
+      }
+
+      const nextErrors = { ...prev };
+      delete nextErrors[e.target.name];
+      return nextErrors;
+    });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
+    setFieldErrors({});
     setLoading(true);
 
     try {
-      // Validate form
-      if (
-        !formData.name.trim() ||
-        !formData.email.trim() ||
-        !formData.subject.trim() ||
-        !formData.message.trim()
-      ) {
-        setError("Please fill in all required fields");
-        setLoading(false);
-        return;
+      const nextErrors = {};
+
+      if (!formData.name.trim()) {
+        nextErrors.name = "Name is required.";
+      } else if (!isValidName(formData.name)) {
+        nextErrors.name = "Please enter a valid name.";
       }
 
-      if (formData.message.length < 10) {
-        setError("Message must be at least 10 characters long");
+      if (!formData.email.trim()) {
+        nextErrors.email = "Email is required.";
+      } else if (!isValidEmail(formData.email)) {
+        nextErrors.email = "Please enter a valid email address.";
+      }
+
+      if (formData.phone.trim() && !isValidPhone(formData.phone)) {
+        nextErrors.phone = "Phone number must contain exactly 10 digits.";
+      }
+
+      if (!formData.subject.trim()) {
+        nextErrors.subject = "Subject is required.";
+      } else if (formData.subject.trim().length < 3) {
+        nextErrors.subject = "Subject must be at least 3 characters.";
+      }
+
+      if (!formData.message.trim()) {
+        nextErrors.message = "Message is required.";
+      } else if (formData.message.trim().length < 10) {
+        nextErrors.message = "Message must be at least 10 characters long.";
+      }
+
+      if (Object.keys(nextErrors).length > 0) {
+        setFieldErrors(nextErrors);
+        setError("Please correct the highlighted fields.");
         setLoading(false);
         return;
       }
 
       // Submit to API
-      await contactApi.submit(formData);
+      await contactApi.submit({
+        ...formData,
+        name: formData.name.trim(),
+        email: formData.email.trim(),
+        phone: formData.phone.trim(),
+        subject: formData.subject.trim(),
+        message: formData.message.trim(),
+      });
 
       setSuccess(true);
       setFormData({
@@ -191,7 +229,7 @@ export function ContactPage() {
               </div>
             )}
 
-            <form onSubmit={handleSubmit} className="space-y-6">
+            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Your Name *
@@ -202,9 +240,14 @@ export function ContactPage() {
                   value={formData.name}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.name ? "border-red-400" : "border-gray-300"}`}
                   placeholder="John Doe"
                 />
+                {fieldErrors.name && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -212,14 +255,20 @@ export function ContactPage() {
                   Email Address *
                 </label>
                 <input
-                  type="email"
+                  type="text"
+                  inputMode="email"
                   name="email"
                   value={formData.email}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.email ? "border-red-400" : "border-gray-300"}`}
                   placeholder="john@example.com"
                 />
+                {fieldErrors.email && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.email}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -232,9 +281,14 @@ export function ContactPage() {
                   value={formData.phone}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  placeholder="+1 (555) 123-4567"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.phone ? "border-red-400" : "border-gray-300"}`}
+                  placeholder="Enter 10-digit phone number"
                 />
+                {fieldErrors.phone && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.phone}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -247,9 +301,14 @@ export function ContactPage() {
                   value={formData.subject}
                   onChange={handleChange}
                   disabled={loading}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.subject ? "border-red-400" : "border-gray-300"}`}
                   placeholder="How can we help?"
                 />
+                {fieldErrors.subject && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.subject}
+                  </p>
+                )}
               </div>
 
               <div>
@@ -262,9 +321,14 @@ export function ContactPage() {
                   onChange={handleChange}
                   disabled={loading}
                   rows="5"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none disabled:bg-gray-100 disabled:cursor-not-allowed"
+                  className={`w-full px-4 py-3 border rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none resize-none disabled:bg-gray-100 disabled:cursor-not-allowed ${fieldErrors.message ? "border-red-400" : "border-gray-300"}`}
                   placeholder="Tell us more about your query..."
                 ></textarea>
+                {fieldErrors.message && (
+                  <p className="mt-2 text-sm text-red-600">
+                    {fieldErrors.message}
+                  </p>
+                )}
               </div>
 
               <button
@@ -321,4 +385,3 @@ export function ContactPage() {
     </div>
   );
 }
-
