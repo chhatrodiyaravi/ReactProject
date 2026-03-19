@@ -2,11 +2,13 @@ import express from "express";
 import {
   getDashboardStats,
   getAllRestaurants,
+  createRestaurant,
   approveRestaurant,
   rejectRestaurant,
   suspendRestaurant,
   unsuspendRestaurant,
   getAllUsers,
+  createUser,
   blockUser,
   unblockUser,
   getPendingDisputes,
@@ -30,6 +32,7 @@ router.get("/dashboard", getDashboardStats);
 
 // Restaurants management
 router.get("/restaurants", getAllRestaurants);
+router.post("/restaurants", createRestaurant);
 router.put("/restaurants/:id/approve", approveRestaurant);
 router.put("/restaurants/:id/reject", rejectRestaurant);
 router.put("/restaurants/:id/suspend", suspendRestaurant);
@@ -37,6 +40,7 @@ router.put("/restaurants/:id/unsuspend", unsuspendRestaurant);
 
 // Users management
 router.get("/users", getAllUsers);
+router.post("/users", createUser);
 router.put("/users/:id/block", blockUser);
 router.put("/users/:id/unblock", unblockUser);
 

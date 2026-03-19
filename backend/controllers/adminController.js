@@ -389,6 +389,159 @@ export const getAllUsers = async (req, res) => {
   }
 };
 
+// @desc    Create user (admin)
+// @route   POST /api/admin/users
+// @access  Private/Admin
+export const createUser = async (req, res) => {
+  try {
+    const { name, email, password, phone, role = "user" } = req.body;
+
+    if (!name || !email || !password) {
+      return res.status(400).json({
+        success: false,
+        message: "Please provide name, email and password",
+      });
+    }
+
+    const allowedRoles = ["user", "owner", "admin"];
+    if (!allowedRoles.includes(role)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid user role",
+      });
+    }
+
+    const userExists = await User.findOne({ email: email.toLowerCase() });
+    if (userExists) {
+      return res.status(400).json({
+        success: false,
+        message: "User already exists with this email",
+      });
+    }
+
+    const user = await User.create({
+      name,
+      email,
+      password,
+      phone,
+      role,
+    });
+
+    await AdminActivity.create({
+      admin: req.user.id,
+      actionType: "create_user",
+      entityType: "user",
+      entityId: user._id,
+      entityName: user.name,
+      description: `Created user: ${user.name} (${user.email})`,
+    });
+
+    res.status(201).json({
+      success: true,
+      message: "User created successfully",
+      data: {
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        phone: user.phone,
+        role: user.role,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Create restaurant (admin)
+// @route   POST /api/admin/restaurants
+// @access  Private/Admin
+export const createRestaurant = async (req, res) => {
+  try {
+    const {
+      name,
+      description,
+      ownerId,
+      phone,
+      email,
+      cuisine,
+      address,
+      deliveryTime,
+      isActive,
+    } = req.body;
+
+    if (!name || !description || !ownerId || !phone || !email) {
+      return res.status(400).json({
+        success: false,
+        message:
+          "Please provide name, description, owner, phone and email for the restaurant",
+      });
+    }
+
+    const owner = await User.findById(ownerId);
+    if (!owner) {
+      return res.status(404).json({
+        success: false,
+        message: "Owner user not found",
+      });
+    }
+
+    if (owner.role !== "owner") {
+      return res.status(400).json({
+        success: false,
+        message: "Selected user is not an owner",
+      });
+    }
+
+    const restaurant = await Restaurant.create({
+      name,
+      description,
+      owner: ownerId,
+      phone,
+      email,
+      cuisine: Array.isArray(cuisine)
+        ? cuisine
+        : String(cuisine || "")
+            .split(",")
+            .map((item) => item.trim())
+            .filter(Boolean),
+      address: address || {},
+      deliveryTime: deliveryTime || { min: 20, max: 45 },
+      isActive: isActive !== undefined ? Boolean(isActive) : true,
+      approvalStatus: "approved",
+      approvedBy: req.user.id,
+      approvedAt: new Date(),
+    });
+
+    await AdminActivity.create({
+      admin: req.user.id,
+      actionType: "create_restaurant",
+      entityType: "restaurant",
+      entityId: restaurant._id,
+      entityName: restaurant.name,
+      description: `Created restaurant: ${restaurant.name}`,
+    });
+
+    const populatedRestaurant = await Restaurant.findById(restaurant._id)
+      .populate("owner", "name email phone")
+      .populate("approvedBy", "name email");
+
+    res.status(201).json({
+      success: true,
+      message: "Restaurant created successfully",
+      data: populatedRestaurant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
 // @desc    Block user
 // @route   PUT /api/admin/users/:id/block
 // @access  Private/Admin

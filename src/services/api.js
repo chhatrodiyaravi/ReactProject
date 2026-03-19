@@ -177,6 +177,12 @@ export const orderApi = {
 
 export const adminApi = {
   dashboard: (token) => request("/admin/dashboard", { token }),
+  createUser: ({ body, token }) =>
+    request("/admin/users", {
+      method: "POST",
+      body,
+      token,
+    }),
   restaurants: ({ token, status, suspended } = {}) => {
     const query = new URLSearchParams();
     if (status) {
@@ -192,6 +198,12 @@ export const adminApi = {
       },
     );
   },
+  createRestaurant: ({ body, token }) =>
+    request("/admin/restaurants", {
+      method: "POST",
+      body,
+      token,
+    }),
   approveRestaurant: ({ id, token }) =>
     request(`/admin/restaurants/${id}/approve`, {
       method: "PUT",

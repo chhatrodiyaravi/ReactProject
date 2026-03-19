@@ -11,11 +11,13 @@ const adminActivitySchema = new mongoose.Schema(
       type: String,
       required: [true, "Please specify action type"],
       enum: [
+        "create_restaurant",
         "approve_restaurant",
         "reject_restaurant",
         "suspend_restaurant",
         "unsuspend_restaurant",
         "delete_restaurant",
+        "create_user",
         "block_user",
         "unblock_user",
         "delete_user",

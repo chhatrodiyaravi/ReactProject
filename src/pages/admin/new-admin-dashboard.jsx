@@ -11,6 +11,8 @@ import {
   RefreshCw,
   CheckCircle,
   XCircle,
+  Eye,
+  EyeOff,
 } from "lucide-react";
 import { useMemo, useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
@@ -36,6 +38,31 @@ export function NewAdminDashboard() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [submittingUser, setSubmittingUser] = useState(false);
+  const [submittingRestaurant, setSubmittingRestaurant] = useState(false);
+  const [showUserPassword, setShowUserPassword] = useState(false);
+
+  const [userForm, setUserForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    password: "",
+    role: "user",
+  });
+
+  const [restaurantForm, setRestaurantForm] = useState({
+    name: "",
+    description: "",
+    ownerId: "",
+    phone: "",
+    email: "",
+    cuisine: "",
+    street: "",
+    city: "",
+    state: "",
+    zipCode: "",
+    country: "",
+  });
 
   const handleLogout = () => {
     logout();
@@ -149,6 +176,85 @@ export function NewAdminDashboard() {
       setError(err.message || "Failed to delete user");
     }
   };
+
+  const addUser = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmittingUser(true);
+      setError("");
+      await adminApi.createUser({
+        body: userForm,
+        token,
+      });
+      setUserForm({
+        name: "",
+        email: "",
+        phone: "",
+        password: "",
+        role: "user",
+      });
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to create user");
+    } finally {
+      setSubmittingUser(false);
+    }
+  };
+
+  const addRestaurant = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmittingRestaurant(true);
+      setError("");
+
+      await adminApi.createRestaurant({
+        token,
+        body: {
+          name: restaurantForm.name,
+          description: restaurantForm.description,
+          ownerId: restaurantForm.ownerId,
+          phone: restaurantForm.phone,
+          email: restaurantForm.email,
+          cuisine: restaurantForm.cuisine,
+          address: {
+            street: restaurantForm.street,
+            city: restaurantForm.city,
+            state: restaurantForm.state,
+            zipCode: restaurantForm.zipCode,
+            country: restaurantForm.country,
+          },
+        },
+      });
+
+      setRestaurantForm({
+        name: "",
+        description: "",
+        ownerId: "",
+        phone: "",
+        email: "",
+        cuisine: "",
+        street: "",
+        city: "",
+        state: "",
+        zipCode: "",
+        country: "",
+      });
+
+      if (restaurantStatusFilter !== "approved") {
+        setRestaurantStatusFilter("approved");
+      }
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to create restaurant");
+    } finally {
+      setSubmittingRestaurant(false);
+    }
+  };
+
+  const ownerUsers = useMemo(
+    () => users.filter((item) => item.role === "owner" && !item.isBlocked),
+    [users],
+  );
 
   const approveRestaurant = async (id) => {
     try {
@@ -328,33 +434,280 @@ export function NewAdminDashboard() {
               )}
 
               {activeTab === "users" && (
-                <DataTable
-                  columns={["Name", "Email", "Role", "Joined", "Actions"]}
-                  rows={filteredUsers.map((item) => (
-                    <tr key={item._id} className="border-t">
-                      <td className="px-4 py-3">{item.name}</td>
-                      <td className="px-4 py-3">{item.email}</td>
-                      <td className="px-4 py-3 capitalize">
-                        {item.role === "user" ? "customer" : item.role}
-                      </td>
-                      <td className="px-4 py-3">
-                        {new Date(item.createdAt).toLocaleDateString()}
-                      </td>
-                      <td className="px-4 py-3">
+                <>
+                  <form
+                    onSubmit={addUser}
+                    noValidate
+                    className="mb-5 bg-white rounded-lg border border-gray-200 p-4"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      Add User
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <input
+                        value={userForm.name}
+                        onChange={(e) =>
+                          setUserForm((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        placeholder="Full name"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="email"
+                        value={userForm.email}
+                        onChange={(e) =>
+                          setUserForm((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        placeholder="Email"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <div className="relative">
+                        <input
+                          type={showUserPassword ? "text" : "password"}
+                          value={userForm.password}
+                          onChange={(e) =>
+                            setUserForm((prev) => ({
+                              ...prev,
+                              password: e.target.value,
+                            }))
+                          }
+                          placeholder="Password"
+                          className="w-full px-3 py-2 pr-10 border rounded-lg"
+                        />
                         <button
-                          onClick={() => removeUser(item._id)}
-                          className="inline-flex items-center gap-1 px-3 py-1.5 text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          type="button"
+                          onClick={() => setShowUserPassword((prev) => !prev)}
+                          className="absolute inset-y-0 right-0 px-3 text-gray-500 hover:text-gray-700"
+                          aria-label={
+                            showUserPassword ? "Hide password" : "Show password"
+                          }
                         >
-                          <Trash2 className="w-4 h-4" /> Delete
+                          {showUserPassword ? (
+                            <EyeOff className="w-4 h-4" />
+                          ) : (
+                            <Eye className="w-4 h-4" />
+                          )}
                         </button>
-                      </td>
-                    </tr>
-                  ))}
-                />
+                      </div>
+                      <input
+                        value={userForm.phone}
+                        onChange={(e) =>
+                          setUserForm((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        placeholder="Phone"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <select
+                        value={userForm.role}
+                        onChange={(e) =>
+                          setUserForm((prev) => ({
+                            ...prev,
+                            role: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 border rounded-lg"
+                      >
+                        <option value="user">Customer</option>
+                        <option value="owner">Owner</option>
+                        <option value="admin">Admin</option>
+                      </select>
+                      <button
+                        type="submit"
+                        disabled={submittingUser}
+                        className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-60"
+                      >
+                        {submittingUser ? "Adding..." : "Add User"}
+                      </button>
+                    </div>
+                  </form>
+
+                  <DataTable
+                    columns={["Name", "Email", "Role", "Joined", "Actions"]}
+                    rows={filteredUsers.map((item) => (
+                      <tr key={item._id} className="border-t">
+                        <td className="px-4 py-3">{item.name}</td>
+                        <td className="px-4 py-3">{item.email}</td>
+                        <td className="px-4 py-3 capitalize">
+                          {item.role === "user" ? "customer" : item.role}
+                        </td>
+                        <td className="px-4 py-3">
+                          {new Date(item.createdAt).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => removeUser(item._id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  />
+                </>
               )}
 
               {activeTab === "restaurants" && (
                 <>
+                  <form
+                    onSubmit={addRestaurant}
+                    noValidate
+                    className="mb-5 bg-white rounded-lg border border-gray-200 p-4"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      Add Restaurant
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <input
+                        value={restaurantForm.name}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            name: e.target.value,
+                          }))
+                        }
+                        placeholder="Restaurant name"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="email"
+                        value={restaurantForm.email}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            email: e.target.value,
+                          }))
+                        }
+                        placeholder="Restaurant email"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.phone}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            phone: e.target.value,
+                          }))
+                        }
+                        placeholder="Phone"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <select
+                        value={restaurantForm.ownerId}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            ownerId: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 border rounded-lg"
+                      >
+                        <option value="">Select owner</option>
+                        {ownerUsers.map((item) => (
+                          <option key={item._id} value={item._id}>
+                            {item.name} ({item.email})
+                          </option>
+                        ))}
+                      </select>
+                      <input
+                        value={restaurantForm.cuisine}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            cuisine: e.target.value,
+                          }))
+                        }
+                        placeholder="Cuisine (comma separated)"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.street}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            street: e.target.value,
+                          }))
+                        }
+                        placeholder="Street"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.city}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            city: e.target.value,
+                          }))
+                        }
+                        placeholder="City"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.state}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            state: e.target.value,
+                          }))
+                        }
+                        placeholder="State"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.zipCode}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            zipCode: e.target.value,
+                          }))
+                        }
+                        placeholder="Zip Code"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        value={restaurantForm.country}
+                        onChange={(e) =>
+                          setRestaurantForm((prev) => ({
+                            ...prev,
+                            country: e.target.value,
+                          }))
+                        }
+                        placeholder="Country"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                    </div>
+                    <textarea
+                      value={restaurantForm.description}
+                      onChange={(e) =>
+                        setRestaurantForm((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      placeholder="Restaurant description"
+                      className="mt-3 w-full px-3 py-2 border rounded-lg"
+                      rows={3}
+                    />
+                    <div className="mt-3">
+                      <button
+                        type="submit"
+                        disabled={submittingRestaurant}
+                        className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-60"
+                      >
+                        {submittingRestaurant ? "Adding..." : "Add Restaurant"}
+                      </button>
+                    </div>
+                  </form>
+
                   <div className="mb-4 flex items-center gap-3">
                     <label className="text-sm text-gray-600">Status</label>
                     <select
