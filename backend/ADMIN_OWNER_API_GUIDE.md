@@ -221,6 +221,53 @@ Query Parameters:
 
 ---
 
+### 8. Discount / Coupon Management
+
+#### Get All Coupons
+
+**GET** `/api/admin/coupons`
+
+Query Parameters:
+
+- `status`: "active" or "inactive"
+- `search`: by coupon code or description
+
+#### Create Coupon
+
+**POST** `/api/admin/coupons`
+
+**Body:**
+
+```json
+{
+  "code": "WELCOME20",
+  "description": "20% off for first order",
+  "discountType": "percentage",
+  "discountValue": 20,
+  "maxDiscount": 200,
+  "minOrderAmount": 300,
+  "usageLimit": 500,
+  "userUsageLimit": 1,
+  "startDate": "2026-03-20T00:00:00.000Z",
+  "expirationDate": "2026-04-20T23:59:59.000Z",
+  "applicableRestaurants": ["<restaurantId1>", "<restaurantId2>"],
+  "applicableCategories": ["Pizza", "Burger"],
+  "isActive": true
+}
+```
+
+#### Update Coupon
+
+**PUT** `/api/admin/coupons/:id`
+
+Use the same fields as create (all optional for update).
+
+#### Delete Coupon
+
+**DELETE** `/api/admin/coupons/:id`
+
+---
+
 ## Owner Dashboard APIs
 
 ### Authentication
@@ -447,6 +494,49 @@ Returns all your activities (menu changes, order updates, info changes).
 
 ---
 
+### 6. Discount / Coupon Management
+
+Owners can manage coupons only for their own restaurant.
+
+#### Get Your Coupons
+
+**GET** `/api/owner/coupons`
+
+#### Create Coupon
+
+**POST** `/api/owner/coupons`
+
+**Body:**
+
+```json
+{
+  "code": "OWNER10",
+  "description": "Flat discount",
+  "discountType": "fixed",
+  "discountValue": 100,
+  "minOrderAmount": 500,
+  "usageLimit": 200,
+  "userUsageLimit": 1,
+  "startDate": "2026-03-20T00:00:00.000Z",
+  "expirationDate": "2026-04-20T23:59:59.000Z",
+  "isActive": true
+}
+```
+
+Note: `applicableRestaurants` is auto-set to the owner's restaurant.
+
+#### Update Coupon
+
+**PUT** `/api/owner/coupons/:id`
+
+Owner can update only coupons created by that owner.
+
+#### Delete Coupon
+
+**DELETE** `/api/owner/coupons/:id`
+
+---
+
 ## Example Workflow
 
 ### For Restaurant Owner:
@@ -585,6 +675,10 @@ You can import the following collection structure:
 - PUT /api/admin/users/:id/block
 - GET /api/admin/disputes
 - PUT /api/admin/disputes/:id/resolve
+- GET /api/admin/coupons
+- POST /api/admin/coupons
+- PUT /api/admin/coupons/:id
+- DELETE /api/admin/coupons/:id
 
 ### Owner Collection
 
@@ -600,6 +694,10 @@ You can import the following collection structure:
 - PUT /api/owner/orders/:id/status
 - GET /api/owner/analytics
 - GET /api/owner/activities
+- GET /api/owner/coupons
+- POST /api/owner/coupons
+- PUT /api/owner/coupons/:id
+- DELETE /api/owner/coupons/:id
 
 ---
 

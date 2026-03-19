@@ -20,6 +20,12 @@ import {
   deleteCategory,
   getActivityLogs,
 } from "../controllers/adminController.js";
+import {
+  getAdminCoupons,
+  createAdminCoupon,
+  updateAdminCoupon,
+  deleteAdminCoupon,
+} from "../controllers/couponController.js";
 import { protect, authorize } from "../middleware/auth.js";
 
 const router = express.Router();
@@ -59,5 +65,11 @@ router.delete("/categories/:id", deleteCategory);
 
 // Activity logs
 router.get("/activities", getActivityLogs);
+
+// Discount/Coupon management
+router.get("/coupons", getAdminCoupons);
+router.post("/coupons", createAdminCoupon);
+router.put("/coupons/:id", updateAdminCoupon);
+router.delete("/coupons/:id", deleteAdminCoupon);
 
 export default router;

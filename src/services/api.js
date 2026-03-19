@@ -215,6 +215,59 @@ export const adminApi = {
       body: { reason },
       token,
     }),
+  coupons: ({ token, status, search } = {}) => {
+    const query = new URLSearchParams();
+    if (status) {
+      query.append("status", status);
+    }
+    if (search) {
+      query.append("search", search);
+    }
+    return request(
+      `/admin/coupons${query.toString() ? `?${query.toString()}` : ""}`,
+      {
+        token,
+      },
+    );
+  },
+  createCoupon: ({ body, token }) =>
+    request("/admin/coupons", {
+      method: "POST",
+      body,
+      token,
+    }),
+  updateCoupon: ({ id, body, token }) =>
+    request(`/admin/coupons/${id}`, {
+      method: "PUT",
+      body,
+      token,
+    }),
+  deleteCoupon: ({ id, token }) =>
+    request(`/admin/coupons/${id}`, {
+      method: "DELETE",
+      token,
+    }),
+};
+
+export const ownerApi = {
+  coupons: (token) => request("/owner/coupons", { token }),
+  createCoupon: ({ body, token }) =>
+    request("/owner/coupons", {
+      method: "POST",
+      body,
+      token,
+    }),
+  updateCoupon: ({ id, body, token }) =>
+    request(`/owner/coupons/${id}`, {
+      method: "PUT",
+      body,
+      token,
+    }),
+  deleteCoupon: ({ id, token }) =>
+    request(`/owner/coupons/${id}`, {
+      method: "DELETE",
+      token,
+    }),
 };
 
 export const contactApi = {

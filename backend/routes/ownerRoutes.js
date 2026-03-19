@@ -13,6 +13,12 @@ import {
   getOwnerAnalytics,
   getOwnerActivityLogs,
 } from "../controllers/ownerController.js";
+import {
+  getOwnerCoupons,
+  createOwnerCoupon,
+  updateOwnerCoupon,
+  deleteOwnerCoupon,
+} from "../controllers/couponController.js";
 import { protect, authorize } from "../middleware/auth.js";
 import upload from "../config/multer.js";
 
@@ -42,5 +48,11 @@ router.get("/analytics", getOwnerAnalytics);
 
 // Activity logs
 router.get("/activities", getOwnerActivityLogs);
+
+// Discount/Coupon management
+router.get("/coupons", getOwnerCoupons);
+router.post("/coupons", createOwnerCoupon);
+router.put("/coupons/:id", updateOwnerCoupon);
+router.delete("/coupons/:id", deleteOwnerCoupon);
 
 export default router;

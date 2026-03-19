@@ -3,6 +3,7 @@ import {
   Users,
   Store,
   ShoppingBag,
+  TicketPercent,
   LogOut,
   TrendingUp,
   Menu,
@@ -36,10 +37,12 @@ export function NewAdminDashboard() {
   const [users, setUsers] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
   const [orders, setOrders] = useState([]);
+  const [coupons, setCoupons] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [submittingUser, setSubmittingUser] = useState(false);
   const [submittingRestaurant, setSubmittingRestaurant] = useState(false);
+  const [submittingCoupon, setSubmittingCoupon] = useState(false);
   const [showUserPassword, setShowUserPassword] = useState(false);
 
   const [userForm, setUserForm] = useState({
@@ -64,6 +67,20 @@ export function NewAdminDashboard() {
     country: "",
   });
 
+  const [couponForm, setCouponForm] = useState({
+    code: "",
+    description: "",
+    discountType: "percentage",
+    discountValue: "",
+    maxDiscount: "",
+    minOrderAmount: "",
+    usageLimit: "",
+    userUsageLimit: "1",
+    startDate: "",
+    expirationDate: "",
+    isActive: true,
+  });
+
   const handleLogout = () => {
     logout();
     navigate("/admin-login");
@@ -74,15 +91,18 @@ export function NewAdminDashboard() {
       setLoading(true);
       setError("");
 
-      const [usersRes, restaurantsRes, ordersRes] = await Promise.all([
-        userApi.list(token),
-        adminApi.restaurants({ token, status: restaurantStatusFilter }),
-        orderApi.getAll(token),
-      ]);
+      const [usersRes, restaurantsRes, ordersRes, couponsRes] =
+        await Promise.all([
+          userApi.list(token),
+          adminApi.restaurants({ token, status: restaurantStatusFilter }),
+          orderApi.getAll(token),
+          adminApi.coupons({ token }),
+        ]);
 
       setUsers(usersRes.data || []);
       setRestaurants(restaurantsRes.data || []);
       setOrders(ordersRes.data || []);
+      setCoupons(couponsRes.data || []);
     } catch (err) {
       setError(err.message || "Failed to load admin data");
     } finally {
@@ -161,11 +181,22 @@ export function NewAdminDashboard() {
     });
   }, [orders, searchQuery]);
 
+  const filteredCoupons = useMemo(() => {
+    return coupons.filter((item) => {
+      const term = searchQuery.toLowerCase();
+      return (
+        item.code?.toLowerCase().includes(term) ||
+        item.description?.toLowerCase().includes(term)
+      );
+    });
+  }, [coupons, searchQuery]);
+
   const navItems = [
     { id: "dashboard", name: "Dashboard", icon: LayoutDashboard },
     { id: "users", name: "Users", icon: Users },
     { id: "restaurants", name: "Restaurants", icon: Store },
     { id: "orders", name: "Orders", icon: ShoppingBag },
+    { id: "coupons", name: "Coupons", icon: TicketPercent },
   ];
 
   const removeUser = async (id) => {
@@ -288,6 +319,64 @@ export function NewAdminDashboard() {
       await fetchAll();
     } catch (err) {
       setError(err.message || "Failed to update order status");
+    }
+  };
+
+  const addCoupon = async (e) => {
+    e.preventDefault();
+    try {
+      setSubmittingCoupon(true);
+      setError("");
+
+      await adminApi.createCoupon({
+        token,
+        body: {
+          ...couponForm,
+          code: couponForm.code.trim().toUpperCase(),
+        },
+      });
+
+      setCouponForm({
+        code: "",
+        description: "",
+        discountType: "percentage",
+        discountValue: "",
+        maxDiscount: "",
+        minOrderAmount: "",
+        usageLimit: "",
+        userUsageLimit: "1",
+        startDate: "",
+        expirationDate: "",
+        isActive: true,
+      });
+
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to create coupon");
+    } finally {
+      setSubmittingCoupon(false);
+    }
+  };
+
+  const removeCoupon = async (id) => {
+    try {
+      await adminApi.deleteCoupon({ id, token });
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to delete coupon");
+    }
+  };
+
+  const toggleCouponStatus = async (coupon) => {
+    try {
+      await adminApi.updateCoupon({
+        id: coupon._id,
+        body: { isActive: !coupon.isActive },
+        token,
+      });
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to update coupon status");
     }
   };
 
@@ -807,6 +896,214 @@ export function NewAdminDashboard() {
                     </tr>
                   ))}
                 />
+              )}
+
+              {activeTab === "coupons" && (
+                <>
+                  <form
+                    onSubmit={addCoupon}
+                    noValidate
+                    className="mb-5 bg-white rounded-lg border border-gray-200 p-4"
+                  >
+                    <h2 className="text-lg font-semibold text-gray-900 mb-3">
+                      Add Coupon / Discount
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                      <input
+                        value={couponForm.code}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            code: e.target.value,
+                          }))
+                        }
+                        placeholder="Code (e.g. WELCOME20)"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <select
+                        value={couponForm.discountType}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            discountType: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 border rounded-lg"
+                      >
+                        <option value="percentage">Percentage (%)</option>
+                        <option value="fixed">Fixed (₹)</option>
+                      </select>
+                      <input
+                        type="number"
+                        value={couponForm.discountValue}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            discountValue: e.target.value,
+                          }))
+                        }
+                        placeholder="Discount value"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="number"
+                        value={couponForm.maxDiscount}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            maxDiscount: e.target.value,
+                          }))
+                        }
+                        placeholder="Max discount (optional)"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="number"
+                        value={couponForm.minOrderAmount}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            minOrderAmount: e.target.value,
+                          }))
+                        }
+                        placeholder="Min order amount"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="number"
+                        value={couponForm.usageLimit}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            usageLimit: e.target.value,
+                          }))
+                        }
+                        placeholder="Usage limit"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="number"
+                        value={couponForm.userUsageLimit}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            userUsageLimit: e.target.value,
+                          }))
+                        }
+                        placeholder="Per-user limit"
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="date"
+                        value={couponForm.startDate}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            startDate: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <input
+                        type="date"
+                        value={couponForm.expirationDate}
+                        onChange={(e) =>
+                          setCouponForm((prev) => ({
+                            ...prev,
+                            expirationDate: e.target.value,
+                          }))
+                        }
+                        className="px-3 py-2 border rounded-lg"
+                      />
+                      <label className="inline-flex items-center gap-2 text-sm text-gray-700">
+                        <input
+                          type="checkbox"
+                          checked={couponForm.isActive}
+                          onChange={(e) =>
+                            setCouponForm((prev) => ({
+                              ...prev,
+                              isActive: e.target.checked,
+                            }))
+                          }
+                        />
+                        Active
+                      </label>
+                    </div>
+                    <textarea
+                      value={couponForm.description}
+                      onChange={(e) =>
+                        setCouponForm((prev) => ({
+                          ...prev,
+                          description: e.target.value,
+                        }))
+                      }
+                      placeholder="Description (optional)"
+                      className="mt-3 w-full px-3 py-2 border rounded-lg"
+                      rows={2}
+                    />
+                    <div className="mt-3">
+                      <button
+                        type="submit"
+                        disabled={submittingCoupon}
+                        className="px-4 py-2 rounded-lg bg-orange-600 text-white hover:bg-orange-700 disabled:opacity-60"
+                      >
+                        {submittingCoupon ? "Adding..." : "Add Coupon"}
+                      </button>
+                    </div>
+                  </form>
+
+                  <DataTable
+                    columns={[
+                      "Code",
+                      "Type",
+                      "Value",
+                      "Validity",
+                      "Usage",
+                      "Status",
+                      "Actions",
+                    ]}
+                    rows={filteredCoupons.map((item) => (
+                      <tr key={item._id} className="border-t">
+                        <td className="px-4 py-3 font-semibold">{item.code}</td>
+                        <td className="px-4 py-3 capitalize">
+                          {item.discountType}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.discountType === "percentage"
+                            ? `${item.discountValue}%`
+                            : `₹${item.discountValue}`}
+                        </td>
+                        <td className="px-4 py-3 text-xs text-gray-600">
+                          {new Date(item.startDate).toLocaleDateString()} -{" "}
+                          {new Date(item.expirationDate).toLocaleDateString()}
+                        </td>
+                        <td className="px-4 py-3">
+                          {item.usedCount || 0}/{item.usageLimit || "∞"}
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => toggleCouponStatus(item)}
+                            className={`px-2 py-1 rounded text-xs ${
+                              item.isActive
+                                ? "bg-green-100 text-green-700"
+                                : "bg-gray-100 text-gray-700"
+                            }`}
+                          >
+                            {item.isActive ? "Active" : "Inactive"}
+                          </button>
+                        </td>
+                        <td className="px-4 py-3">
+                          <button
+                            onClick={() => removeCoupon(item._id)}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 text-red-600 border border-red-200 rounded hover:bg-red-50"
+                          >
+                            <Trash2 className="w-4 h-4" /> Delete
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  />
+                </>
               )}
             </>
           )}
