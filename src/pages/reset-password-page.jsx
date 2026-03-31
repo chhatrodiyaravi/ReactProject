@@ -1,7 +1,8 @@
-import { Link, useNavigate, useLocation } from "react-router-dom";
+import { Link, useNavigate, useParams } from "react-router-dom";
 import { Lock, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { getPasswordChecks } from "../utils/validation";
+import { authApi } from "../services/api";
 
 export function ResetPasswordPage() {
   const [newPassword, setNewPassword] = useState("");
@@ -12,8 +13,13 @@ export function ResetPasswordPage() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const navigate = useNavigate();
-  const location = useLocation();
-  const email = location.state?.email || "";
+  const { token } = useParams();
+
+  useEffect(() => {
+    if (!token) {
+      setError("Invalid or missing reset token. Please request a new link.");
+    }
+  }, [token]);
 
   const passwordStrength = getPasswordChecks(newPassword);
 
@@ -31,18 +37,27 @@ export function ResetPasswordPage() {
       return;
     }
 
+    if (!token) {
+      setError("Invalid or missing reset token. Please request a new link.");
+      return;
+    }
+
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await authApi.resetPassword({
+        token,
+        body: { password: newPassword },
+      });
       setSuccess(true);
-
-      // Redirect to login after 2 seconds
       setTimeout(() => {
         navigate("/login");
       }, 2000);
-    }, 1500);
+    } catch (err) {
+      setError(err.message || "Unable to reset password");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -54,7 +69,7 @@ export function ResetPasswordPage() {
             Reset Password
           </h2>
           <p className="text-gray-600 mt-2">
-            {email ? `for ${email}` : "Create a new password for your account"}
+            Create a new password for your account
           </p>
         </div>
 
@@ -158,7 +173,7 @@ export function ResetPasswordPage() {
 
                 <button
                   type="submit"
-                  disabled={loading || !passwordStrength.isValid}
+                  disabled={loading || !passwordStrength.isValid || !token}
                   className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? "Resetting Password..." : "Reset Password"}

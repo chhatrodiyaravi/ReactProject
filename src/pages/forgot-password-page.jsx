@@ -1,14 +1,14 @@
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 import { useState } from "react";
 import { isValidEmail } from "../utils/validation";
+import { authApi } from "../services/api";
 
 export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
   const [emailSent, setEmailSent] = useState(false);
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -28,16 +28,15 @@ export function ForgotPasswordPage() {
 
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
+    try {
+      await authApi.forgotPassword({ email: trimmedEmail });
+      setEmail(trimmedEmail);
       setEmailSent(true);
-
-      // After 3 seconds, redirect to reset password page
-      setTimeout(() => {
-        navigate("/reset-password", { state: { email: trimmedEmail } });
-      }, 3000);
-    }, 1500);
+    } catch {
+      setError("Unable to send reset email right now. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -98,7 +97,7 @@ export function ForgotPasswordPage() {
                 <span className="font-medium text-gray-900">{email}</span>
               </p>
               <p className="text-sm text-gray-500">
-                Redirecting to reset password page...
+                Use the link in your inbox to continue.
               </p>
             </div>
           )}

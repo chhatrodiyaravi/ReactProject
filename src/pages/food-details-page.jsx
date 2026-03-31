@@ -225,7 +225,11 @@ export function FoodDetailsPage() {
                 {isAuthenticated && token ? (
                   <ReviewForm
                     foodId={id}
-                    restaurantId={foodItem.restaurant}
+                    restaurantId={
+                      typeof foodItem.restaurant === "object"
+                        ? foodItem.restaurant?._id
+                        : foodItem.restaurant
+                    }
                     token={token}
                     onReviewSubmitted={() =>
                       setReviewRefresh((prev) => prev + 1)

@@ -3,6 +3,8 @@ import { useAuth } from "../context/AuthContext";
 
 export function ProtectedRoute({ children, allowedRoles = [] }) {
   const { user, loading } = useAuth();
+  const sessionRole = sessionStorage.getItem("auth_role");
+  const effectiveRole = user?.role || sessionRole;
 
   if (loading) {
     return (
@@ -19,15 +21,14 @@ export function ProtectedRoute({ children, allowedRoles = [] }) {
     return <Navigate to="/login" replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+  if (allowedRoles.length > 0 && !allowedRoles.includes(effectiveRole)) {
     // Redirect based on user role
-    if (user.role === "admin")
+    if (effectiveRole === "admin")
       return <Navigate to="/admin-dashboard" replace />;
-    if (user.role === "owner")
+    if (effectiveRole === "owner")
       return <Navigate to="/owner-dashboard" replace />;
     return <Navigate to="/" replace />;
   }
 
   return children;
 }
-

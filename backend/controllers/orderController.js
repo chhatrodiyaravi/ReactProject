@@ -13,6 +13,8 @@ export const createOrder = async (req, res) => {
       taxPrice,
       deliveryPrice,
       totalPrice,
+      discountAmount,
+      couponApplied,
     } = req.body;
 
     if (orderItems && orderItems.length === 0) {
@@ -31,6 +33,8 @@ export const createOrder = async (req, res) => {
       taxPrice,
       deliveryPrice,
       totalPrice,
+      discountAmount: discountAmount || 0,
+      couponApplied: couponApplied || null,
     });
 
     res.status(201).json({
@@ -76,6 +80,7 @@ export const getMyOrders = async (req, res) => {
     const orders = await Order.find({ user: req.user.id })
       .populate("orderItems.food", "name price image")
       .populate("orderItems.restaurant", "name")
+      .populate("couponApplied", "code discountType discountValue")
       .sort("-createdAt");
 
     res.status(200).json({
@@ -99,7 +104,8 @@ export const getOrderById = async (req, res) => {
     const order = await Order.findById(req.params.id)
       .populate("user", "name email phone")
       .populate("orderItems.food", "name price image")
-      .populate("orderItems.restaurant", "name phone address");
+      .populate("orderItems.restaurant", "name phone address")
+      .populate("couponApplied", "code discountType discountValue");
 
     if (!order) {
       return res.status(404).json({

@@ -1,5 +1,5 @@
 import Review from "../models/Review.js";
-import Rating from "../models/Rating.js";
+import mongoose from "mongoose";
 
 // @desc    Create a review for food
 // @route   POST /api/reviews
@@ -9,18 +9,38 @@ export const createReview = async (req, res) => {
     const { foodId, restaurantId, rating, title, comment } = req.body;
     const userId = req.user.id;
 
+    const normalizedFoodId =
+      typeof foodId === "object" && foodId !== null ? foodId._id : foodId;
+    const normalizedRestaurantId =
+      typeof restaurantId === "object" && restaurantId !== null
+        ? restaurantId._id
+        : restaurantId;
+    const normalizedRating = Number(rating);
+
     // Validate required fields
-    if (!foodId || !restaurantId || !rating || !title || !comment) {
+    if (
+      !normalizedFoodId ||
+      !normalizedRestaurantId ||
+      !comment ||
+      !Number.isFinite(normalizedRating)
+    ) {
       return res.status(400).json({
         success: false,
-        message: "Please provide all required fields",
+        message: "Please provide rating and comment",
+      });
+    }
+
+    if (normalizedRating < 1 || normalizedRating > 5) {
+      return res.status(400).json({
+        success: false,
+        message: "Rating must be between 1 and 5",
       });
     }
 
     // Check if already reviewed this food
     const existingReview = await Review.findOne({
       user: userId,
-      food: foodId,
+      food: normalizedFoodId,
     });
 
     if (existingReview) {
@@ -33,9 +53,9 @@ export const createReview = async (req, res) => {
     // Create review
     const review = await Review.create({
       user: userId,
-      food: foodId,
-      restaurant: restaurantId,
-      rating,
+      food: normalizedFoodId,
+      restaurant: normalizedRestaurantId,
+      rating: normalizedRating,
       title,
       comment,
       isVerifiedPurchase: true, // This should be checked against orders in production
@@ -90,7 +110,7 @@ export const getFoodReviews = async (req, res) => {
 
     // Calculate average rating
     const ratingStats = await Review.aggregate([
-      { $match: { food: { $oid: foodId } } },
+      { $match: { food: new mongoose.Types.ObjectId(foodId) } },
       {
         $group: {
           _id: null,

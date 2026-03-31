@@ -42,6 +42,10 @@ async function request(path, { method = "GET", body, token } = {}) {
 export const authApi = {
   register: (body) => request("/auth/register", { method: "POST", body }),
   login: (body) => request("/auth/login", { method: "POST", body }),
+  forgotPassword: (body) =>
+    request("/auth/forgot-password", { method: "POST", body }),
+  resetPassword: ({ token, body }) =>
+    request(`/auth/reset-password/${token}`, { method: "POST", body }),
   me: (token) => request("/auth/me", { token }),
 };
 
@@ -137,6 +141,7 @@ export const restaurantApi = {
 };
 
 export const foodApi = {
+  listCategories: () => request("/foods/categories"),
   list: (params = {}) => {
     const query = new URLSearchParams();
     Object.entries(params).forEach(([key, value]) => {

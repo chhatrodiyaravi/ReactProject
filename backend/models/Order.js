@@ -27,6 +27,10 @@ const orderSchema = new mongoose.Schema({
         type: mongoose.Schema.Types.ObjectId,
         ref: "Restaurant",
       },
+      itemTotal: {
+        type: Number,
+        default: 0,
+      },
     },
   ],
   deliveryAddress: {

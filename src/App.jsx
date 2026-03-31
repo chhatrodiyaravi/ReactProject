@@ -37,6 +37,10 @@ export default function App() {
           <Route path="/register" element={<RegisterPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
+          <Route
+            path="/reset-password/:token"
+            element={<ResetPasswordPage />}
+          />
           <Route path="/owner-login" element={<OwnerLoginPage />} />
           <Route path="/owner-register" element={<OwnerRegisterPage />} />
           <Route path="/admin-login" element={<AdminLoginPage />} />

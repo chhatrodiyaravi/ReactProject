@@ -112,7 +112,24 @@ export function OrdersPage() {
                     <div className="flex flex-wrap gap-4 text-sm text-gray-600 mb-4">
                       <span>{(order.orderItems || []).length} items</span>
                       <span>•</span>
-                      <span>₹{order.totalPrice}</span>
+                      <div className="flex gap-2">
+                        {order.discountAmount > 0 && (
+                          <>
+                            <span className="line-through text-gray-400">
+                              ₹
+                              {order.itemsPrice +
+                                order.taxPrice +
+                                order.deliveryPrice}
+                            </span>
+                            <span className="text-green-600 font-medium">
+                              ₹{order.totalPrice}
+                            </span>
+                          </>
+                        )}
+                        {order.discountAmount === 0 && (
+                          <span>₹{order.totalPrice}</span>
+                        )}
+                      </div>
                       <span>•</span>
                       <span>
                         {new Date(order.createdAt).toLocaleDateString()}
@@ -185,4 +202,3 @@ export function OrdersPage() {
     </div>
   );
 }
-

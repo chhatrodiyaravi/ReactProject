@@ -16,6 +16,10 @@ export function AuthProvider({ children }) {
   const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
 
+  const AUTH_TOKEN_KEY = "auth_token";
+  const AUTH_ROLE_KEY = "auth_role";
+  const AUTH_USER_KEY = "auth_user";
+
   const normalizeRole = (role) => (role === "user" ? "customer" : role);
 
   const mapUser = (rawUser, authToken) => ({
@@ -24,16 +28,29 @@ export function AuthProvider({ children }) {
     token: authToken,
   });
 
+  const saveSessionAuth = (nextUser, authToken) => {
+    sessionStorage.setItem(AUTH_TOKEN_KEY, authToken);
+    sessionStorage.setItem(AUTH_ROLE_KEY, nextUser.role || "");
+    sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(nextUser));
+  };
+
+  const clearSessionAuth = () => {
+    sessionStorage.removeItem(AUTH_TOKEN_KEY);
+    sessionStorage.removeItem(AUTH_ROLE_KEY);
+    sessionStorage.removeItem(AUTH_USER_KEY);
+  };
+
   useEffect(() => {
-    const bootstrapUser = localStorage.getItem("user");
-    const bootstrapToken = localStorage.getItem("token");
+    const bootstrapUser = sessionStorage.getItem(AUTH_USER_KEY);
+    const bootstrapToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
 
     if (bootstrapUser && !bootstrapToken) {
-      localStorage.removeItem("user");
+      sessionStorage.removeItem(AUTH_USER_KEY);
+      sessionStorage.removeItem(AUTH_ROLE_KEY);
     }
 
     const initAuth = async () => {
-      const storedToken = localStorage.getItem("token");
+      const storedToken = sessionStorage.getItem(AUTH_TOKEN_KEY);
 
       if (!storedToken) {
         setLoading(false);
@@ -45,10 +62,9 @@ export function AuthProvider({ children }) {
         const nextUser = mapUser(meRes.data, storedToken);
         setToken(storedToken);
         setUser(nextUser);
-        localStorage.setItem("user", JSON.stringify(nextUser));
+        saveSessionAuth(nextUser, storedToken);
       } catch {
-        localStorage.removeItem("token");
-        localStorage.removeItem("user");
+        clearSessionAuth();
         setToken(null);
         setUser(null);
       } finally {
@@ -78,8 +94,7 @@ export function AuthProvider({ children }) {
       const nextUser = mapUser(res.data, res.data.token);
       setToken(res.data.token);
       setUser(nextUser);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(nextUser));
+      saveSessionAuth(nextUser, res.data.token);
 
       return { success: true, user: nextUser };
     } catch (error) {
@@ -90,8 +105,7 @@ export function AuthProvider({ children }) {
   const logout = () => {
     setUser(null);
     setToken(null);
-    localStorage.removeItem("token");
-    localStorage.removeItem("user");
+    clearSessionAuth();
   };
 
   const register = async (name, email, password, role = "customer", phone) => {
@@ -108,8 +122,7 @@ export function AuthProvider({ children }) {
       const nextUser = mapUser(res.data, res.data.token);
       setToken(res.data.token);
       setUser(nextUser);
-      localStorage.setItem("token", res.data.token);
-      localStorage.setItem("user", JSON.stringify(nextUser));
+      saveSessionAuth(nextUser, res.data.token);
 
       return { success: true, user: nextUser };
     } catch (error) {
@@ -143,7 +156,8 @@ export function AuthProvider({ children }) {
         token,
       };
       setUser(merged);
-      localStorage.setItem("user", JSON.stringify(merged));
+      sessionStorage.setItem(AUTH_ROLE_KEY, merged.role || "");
+      sessionStorage.setItem(AUTH_USER_KEY, JSON.stringify(merged));
       return { success: true, user: merged };
     } catch (error) {
       return {

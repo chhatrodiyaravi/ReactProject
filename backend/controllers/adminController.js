@@ -118,6 +118,53 @@ export const getDashboardStats = async (req, res) => {
       },
     ]);
 
+    const averageOrderValue = totalOrders > 0 ? totalRevenue / totalOrders : 0;
+    const orderCompletionRate =
+      totalOrders > 0 ? (deliveredOrdersToday / totalOrders) * 100 : 0;
+
+    const dashboardSnapshot = {
+      date: today,
+      totalOrders,
+      totalRevenue,
+      totalRestaurants,
+      activeRestaurants,
+      suspendedRestaurants,
+      totalUsers,
+      activeUsers,
+      blockedUsers,
+      newOrdersToday: todayOrders,
+      deliveredOrdersToday,
+      cancelledOrdersToday,
+      revenueToday,
+      topRestaurants: topRestaurants.map((entry) => ({
+        restaurant: entry._id,
+        orders: entry.orders,
+        revenue: entry.revenue,
+      })),
+      pendingDisputes,
+      pendingApprovals,
+      averageOrderValue,
+      orderCompletionRate,
+    };
+
+    await AdminDashboard.findOneAndUpdate(
+      {
+        date: {
+          $gte: today,
+          $lt: tomorrow,
+        },
+      },
+      { $set: dashboardSnapshot },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    await AdminActivity.create({
+      admin: req.user.id,
+      actionType: "generate_report",
+      entityType: "system",
+      description: "Viewed admin dashboard stats",
+    });
+
     res.status(200).json({
       success: true,
       data: {
@@ -136,6 +183,8 @@ export const getDashboardStats = async (req, res) => {
         totalRevenue,
         revenueToday,
         topRestaurants,
+        averageOrderValue,
+        orderCompletionRate,
       },
     });
   } catch (error) {

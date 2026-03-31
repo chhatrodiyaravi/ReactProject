@@ -69,7 +69,65 @@ The server will run on `http://localhost:5000`
 
 - `POST /api/auth/register` - Register new user
 - `POST /api/auth/login` - Login user
+- `POST /api/auth/forgot-password` - Send password reset email
+- `POST /api/auth/reset-password/:token` - Reset password with token
 - `GET /api/auth/me` - Get current user (Protected)
+
+## Forgot Password Email Setup
+
+The forgot-password flow sends a reset link by SMTP in real time.
+
+Required environment variables in `.env`:
+
+```env
+RESET_PASSWORD_URL=http://localhost:5173/reset-password
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=your-email@example.com
+SMTP_PASS=your-smtp-password-or-app-password
+SMTP_FROM=FoodHub <no-reply@foodhub.com>
+```
+
+How reset links are built:
+
+- The backend appends a secure token to `RESET_PASSWORD_URL`
+- Example link: `http://localhost:5173/reset-password/<token>`
+
+### Gmail Example
+
+```env
+SMTP_HOST=smtp.gmail.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=youraccount@gmail.com
+SMTP_PASS=your-16-character-app-password
+SMTP_FROM=FoodHub <youraccount@gmail.com>
+```
+
+Notes:
+
+- Use a Google App Password, not your normal Gmail password
+- App Passwords require 2-Step Verification enabled on your Google account
+
+### Outlook Example
+
+```env
+SMTP_HOST=smtp.office365.com
+SMTP_PORT=587
+SMTP_SECURE=false
+SMTP_USER=youraccount@outlook.com
+SMTP_PASS=your-outlook-password-or-app-password
+SMTP_FROM=FoodHub <youraccount@outlook.com>
+```
+
+### Troubleshooting
+
+- `Unable to send reset email right now`: Check SMTP env values and restart backend
+- `EAUTH` errors: Credentials are invalid or provider blocked sign-in
+- Timeout / connection errors: Verify firewall, VPN, or blocked outbound SMTP
+- Reset page says invalid token: Token expired (15 minutes) or was already used
+- Link opens wrong host: Set `RESET_PASSWORD_URL` to your active frontend URL
 
 ### Users
 

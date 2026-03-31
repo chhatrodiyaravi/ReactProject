@@ -1,6 +1,7 @@
 import Order from "../models/Order.js";
 import Food from "../models/Food.js";
 import Restaurant from "../models/Restaurant.js";
+import Review from "../models/Review.js";
 import OwnerAnalytics from "../models/OwnerAnalytics.js";
 import OwnerActivity from "../models/OwnerActivity.js";
 
@@ -529,6 +530,110 @@ export const getOwnerAnalytics = async (req, res) => {
         message: "Restaurant not found",
       });
     }
+
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const todaysOrders = await Order.find({
+      "orderItems.restaurant": restaurant._id,
+      createdAt: { $gte: today, $lt: tomorrow },
+    }).select("orderStatus totalPrice orderItems createdAt");
+
+    const totalOrders = todaysOrders.length;
+    const acceptedOrders = todaysOrders.filter(
+      (order) =>
+        order.orderStatus !== "Pending" && order.orderStatus !== "Cancelled",
+    ).length;
+    const rejectedOrders = todaysOrders.filter(
+      (order) => order.orderStatus === "Cancelled",
+    ).length;
+    const deliveredOrders = todaysOrders.filter(
+      (order) => order.orderStatus === "Delivered",
+    ).length;
+    const pendingOrders = todaysOrders.filter(
+      (order) => order.orderStatus === "Pending",
+    ).length;
+
+    const totalRevenue = todaysOrders
+      .filter((order) => order.orderStatus === "Delivered")
+      .reduce((sum, order) => sum + (order.totalPrice || 0), 0);
+
+    const totalItemsSold = todaysOrders
+      .filter((order) => order.orderStatus === "Delivered")
+      .reduce(
+        (sum, order) =>
+          sum +
+          order.orderItems.reduce((items, item) => {
+            if (String(item.restaurant) !== String(restaurant._id)) {
+              return items;
+            }
+            return items + (item.quantity || 0);
+          }, 0),
+        0,
+      );
+
+    const foods = await Food.find({ restaurant: restaurant._id }).select("_id");
+    const foodIds = foods.map((food) => food._id);
+    const ratingData = await Review.aggregate([
+      {
+        $match: {
+          food: { $in: foodIds },
+        },
+      },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: "$rating" },
+        },
+      },
+    ]);
+
+    const averageRating =
+      ratingData.length > 0 ? Number(ratingData[0].averageRating || 0) : 0;
+
+    const analyticsPayload = {
+      restaurant: restaurant._id,
+      owner: req.user.id,
+      date: today,
+      totalOrders,
+      acceptedOrders,
+      rejectedOrders,
+      cancelledOrders: rejectedOrders,
+      deliveredOrders,
+      totalRevenue,
+      totalItemsSold,
+      averageOrderValue: totalOrders > 0 ? totalRevenue / totalOrders : 0,
+      averageRating,
+      orderAcceptanceRate:
+        totalOrders > 0 ? (acceptedOrders / totalOrders) * 100 : 0,
+      orderCompletionRate:
+        totalOrders > 0 ? (deliveredOrders / totalOrders) * 100 : 0,
+      activeMenuItems: foods.length,
+      totalMenuItems: foods.length,
+      pendingOrders,
+    };
+
+    await OwnerAnalytics.findOneAndUpdate(
+      {
+        restaurant: restaurant._id,
+        date: { $gte: today, $lt: tomorrow },
+      },
+      { $set: analyticsPayload },
+      { upsert: true, new: true, setDefaultsOnInsert: true },
+    );
+
+    await OwnerActivity.create({
+      owner: req.user.id,
+      restaurant: restaurant._id,
+      activityType: "view_analytics",
+      entityType: "restaurant",
+      entityId: restaurant._id,
+      entityName: restaurant.name,
+      description: "Viewed owner analytics dashboard",
+    });
 
     let analytics;
 

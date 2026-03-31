@@ -5,7 +5,6 @@ import { reviewApi } from "../services/api";
 export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
-  const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -21,8 +20,8 @@ export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
       return;
     }
 
-    if (!title.trim() || !comment.trim()) {
-      setError("Please fill in all required fields");
+    if (!comment.trim()) {
+      setError("Please fill in your review comment");
       return;
     }
 
@@ -39,7 +38,6 @@ export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
           foodId,
           restaurantId,
           rating,
-          title,
           comment,
         },
         token,
@@ -47,7 +45,6 @@ export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
 
       setSuccess(true);
       setRating(0);
-      setTitle("");
       setComment("");
 
       setTimeout(() => {
@@ -87,46 +84,38 @@ export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Rating Selection */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Rating *
+          <label className="block text-sm font-medium text-gray-700 mb-3">
+            Rating *{" "}
+            {rating > 0 && (
+              <span className="text-orange-600 font-semibold">
+                ({rating}/5)
+              </span>
+            )}
           </label>
-          <div className="flex gap-2">
+          <div className="flex gap-3 items-center">
             {[1, 2, 3, 4, 5].map((value) => (
               <button
                 key={value}
                 type="button"
-                onClick={() => setRating(value)}
+                onClick={() => {
+                  console.log("Star clicked:", value);
+                  setRating(value);
+                }}
                 onMouseEnter={() => setHoverRating(value)}
                 onMouseLeave={() => setHoverRating(0)}
-                className="focus:outline-none transition-transform hover:scale-110"
+                className="cursor-pointer p-1 hover:scale-125 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-orange-400 rounded"
               >
                 <Star
-                  className={`w-8 h-8 ${
+                  size={32}
+                  className={`transition-all ${
                     value <= (hoverRating || rating)
-                      ? "fill-yellow-400 text-yellow-400"
-                      : "text-gray-300"
+                      ? "fill-yellow-400 text-yellow-400 drop-shadow-lg"
+                      : "text-gray-300 hover:text-yellow-300"
                   }`}
                 />
               </button>
             ))}
           </div>
-        </div>
-
-        {/* Title */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Review Title *
-          </label>
-          <input
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            disabled={loading}
-            maxLength={100}
-            placeholder="Sum up your experience in a few words"
-            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none disabled:bg-gray-100"
-          />
-          <p className="text-xs text-gray-500 mt-1">{title.length}/100</p>
         </div>
 
         {/* Comment */}
@@ -168,4 +157,3 @@ export function ReviewForm({ foodId, restaurantId, token, onReviewSubmitted }) {
     </div>
   );
 }
-

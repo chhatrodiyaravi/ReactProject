@@ -245,6 +245,31 @@ export function OrderStatusPage() {
             ))}
           </div>
 
+          <div className="space-y-2 mb-4 pb-4 border-b">
+            <div className="flex justify-between text-gray-600">
+              <span>Subtotal</span>
+              <span>₹{order.itemsPrice}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Tax</span>
+              <span>₹{order.taxPrice}</span>
+            </div>
+            <div className="flex justify-between text-gray-600">
+              <span>Delivery Fee</span>
+              <span>₹{order.deliveryPrice}</span>
+            </div>
+            {order.discountAmount > 0 && (
+              <div className="flex justify-between text-green-600 font-medium">
+                <span>
+                  Discount
+                  {order.couponApplied?.code &&
+                    ` (${order.couponApplied.code})`}
+                </span>
+                <span>-₹{order.discountAmount}</span>
+              </div>
+            )}
+          </div>
+
           <div className="flex justify-between font-semibold text-lg text-gray-900">
             <span>Total Amount</span>
             <span>₹{order.totalPrice}</span>
@@ -302,4 +327,3 @@ export function OrderStatusPage() {
     </div>
   );
 }
-

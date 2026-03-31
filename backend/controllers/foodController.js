@@ -1,5 +1,6 @@
 import Food from "../models/Food.js";
 import Restaurant from "../models/Restaurant.js";
+import Category from "../models/Category.js";
 
 // @desc    Get all foods
 // @route   GET /api/foods
@@ -202,6 +203,28 @@ export const deleteFood = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Food item deleted successfully",
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Get all categories
+// @route   GET /api/foods/categories
+// @access  Public
+export const getCategories = async (req, res) => {
+  try {
+    const categories = await Category.find({ isActive: true })
+      .select("name slug description image icon displayOrder")
+      .sort({ displayOrder: 1 });
+
+    res.status(200).json({
+      success: true,
+      count: categories.length,
+      data: categories,
     });
   } catch (error) {
     res.status(500).json({

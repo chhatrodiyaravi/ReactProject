@@ -230,7 +230,10 @@ export function CheckoutPage() {
       const res = await orderApi.create({
         token,
         body: {
-          orderItems: orderSummary.items,
+          orderItems: orderSummary.items.map((item) => ({
+            ...item,
+            itemTotal: item.price * item.quantity,
+          })),
           deliveryAddress: {
             street: addressForm.street.trim(),
             city: addressForm.city.trim(),
@@ -243,7 +246,8 @@ export function CheckoutPage() {
           taxPrice: orderSummary.tax,
           deliveryPrice: orderSummary.deliveryFee,
           totalPrice: orderSummary.total,
-          ...(appliedCoupon && { discountAmount: orderSummary.discountAmount }),
+          discountAmount: orderSummary.discountAmount || 0,
+          ...(appliedCoupon && { couponApplied: appliedCoupon._id }),
         },
       });
 
