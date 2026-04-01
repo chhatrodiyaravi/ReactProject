@@ -1,6 +1,28 @@
 import Cart from "../models/Cart.js";
 import Food from "../models/Food.js";
 
+const normalizeCartForResponse = (cartDoc) => {
+  const cart = cartDoc?.toObject ? cartDoc.toObject() : cartDoc;
+  const items = (cart?.items || []).map((item) => {
+    const unitPrice = Number(item?.price ?? item?.food?.price ?? 0);
+    const quantity = Number(item?.quantity ?? 0);
+
+    return {
+      ...item,
+      unitPrice,
+      lineTotal: unitPrice * quantity,
+    };
+  });
+
+  const totalPrice = items.reduce((sum, item) => sum + item.lineTotal, 0);
+
+  return {
+    ...cart,
+    items,
+    totalPrice,
+  };
+};
+
 // @desc    Get user cart
 // @route   GET /api/cart
 // @access  Private
@@ -18,9 +40,11 @@ export const getCart = async (req, res) => {
       });
     }
 
+    const normalizedCart = normalizeCartForResponse(cart);
+
     res.status(200).json({
       success: true,
-      data: cart,
+      data: normalizedCart,
     });
   } catch (error) {
     res.status(500).json({
@@ -35,7 +59,15 @@ export const getCart = async (req, res) => {
 // @access  Private
 export const addToCart = async (req, res) => {
   try {
-    const { foodId, quantity } = req.body;
+    const { foodId } = req.body;
+    const quantity = Number(req.body.quantity) || 1;
+
+    if (quantity < 1) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be at least 1",
+      });
+    }
 
     // Check if food exists
     const food = await Food.findById(foodId);
@@ -94,9 +126,11 @@ export const addToCart = async (req, res) => {
       .populate("items.food", "name price image isAvailable")
       .populate("items.restaurant", "name");
 
+    const normalizedCart = normalizeCartForResponse(cart);
+
     res.status(200).json({
       success: true,
-      data: cart,
+      data: normalizedCart,
     });
   } catch (error) {
     res.status(500).json({
@@ -111,7 +145,15 @@ export const addToCart = async (req, res) => {
 // @access  Private
 export const updateCartItem = async (req, res) => {
   try {
-    const { quantity } = req.body;
+    const quantity = Number(req.body.quantity);
+
+    if (Number.isNaN(quantity)) {
+      return res.status(400).json({
+        success: false,
+        message: "Quantity must be a valid number",
+      });
+    }
+
     console.log("=== updateCartItem called ===");
     console.log("User ID:", req.user.id);
     console.log("Item ID:", req.params.itemId);
@@ -162,9 +204,11 @@ export const updateCartItem = async (req, res) => {
       .populate("items.restaurant", "name");
 
     console.log("Sending updated cart:", populatedCart.items.length, "items");
+    const normalizedCart = normalizeCartForResponse(populatedCart);
+
     res.status(200).json({
       success: true,
-      data: populatedCart,
+      data: normalizedCart,
     });
   } catch (error) {
     console.error("updateCartItem error:", error);
@@ -219,9 +263,11 @@ export const removeFromCart = async (req, res) => {
       .populate("items.restaurant", "name");
 
     console.log("Item removed, sending updated cart");
+    const normalizedCart = normalizeCartForResponse(populatedCart);
+
     res.status(200).json({
       success: true,
-      data: populatedCart,
+      data: normalizedCart,
     });
   } catch (error) {
     console.error("removeFromCart error:", error);
@@ -250,9 +296,11 @@ export const clearCart = async (req, res) => {
     cart.totalPrice = 0;
     await cart.save();
 
+    const normalizedCart = normalizeCartForResponse(cart);
+
     res.status(200).json({
       success: true,
-      data: cart,
+      data: normalizedCart,
     });
   } catch (error) {
     res.status(500).json({

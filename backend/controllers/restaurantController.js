@@ -14,7 +14,14 @@ export const getRestaurants = async (req, res) => {
 
     const shouldIncludeInactive =
       String(includeInactive).toLowerCase() === "true";
-    if (!shouldIncludeInactive) {
+    const isOwnerScoped = Boolean(owner);
+
+    // User/public side should only see restaurants approved by admin.
+    if (!isOwnerScoped) {
+      query.approvalStatus = "approved";
+      query.isSuspended = false;
+      query.isActive = true;
+    } else if (!shouldIncludeInactive) {
       query.isActive = true;
     }
 
@@ -60,6 +67,17 @@ export const getRestaurant = async (req, res) => {
       return res.status(404).json({
         success: false,
         message: "Restaurant not found",
+      });
+    }
+
+    if (
+      restaurant.approvalStatus !== "approved" ||
+      !restaurant.isActive ||
+      restaurant.isSuspended
+    ) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not available",
       });
     }
 

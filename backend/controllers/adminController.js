@@ -1,5 +1,6 @@
 import Order from "../models/Order.js";
 import Restaurant from "../models/Restaurant.js";
+import Food from "../models/Food.js";
 import User from "../models/User.js";
 import AdminDashboard from "../models/AdminDashboard.js";
 import AdminActivity from "../models/AdminActivity.js";
@@ -393,6 +394,44 @@ export const unsuspendRestaurant = async (req, res) => {
       success: true,
       message: "Restaurant unsuspended successfully",
       data: restaurant,
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: error.message,
+    });
+  }
+};
+
+// @desc    Delete restaurant
+// @route   DELETE /api/admin/restaurants/:id
+// @access  Private/Admin
+export const deleteRestaurant = async (req, res) => {
+  try {
+    const restaurant = await Restaurant.findById(req.params.id);
+
+    if (!restaurant) {
+      return res.status(404).json({
+        success: false,
+        message: "Restaurant not found",
+      });
+    }
+
+    await Food.deleteMany({ restaurant: restaurant._id });
+    await restaurant.deleteOne();
+
+    await AdminActivity.create({
+      admin: req.user.id,
+      actionType: "delete_restaurant",
+      entityType: "restaurant",
+      entityId: restaurant._id,
+      entityName: restaurant.name,
+      description: `Deleted restaurant: ${restaurant.name}`,
+    });
+
+    res.status(200).json({
+      success: true,
+      message: "Restaurant deleted successfully",
     });
   } catch (error) {
     res.status(500).json({

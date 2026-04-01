@@ -46,6 +46,8 @@ export function OwnerDashboardPage() {
 
   const [restaurants, setRestaurants] = useState([]);
   const [foods, setFoods] = useState([]);
+  const [menuRestaurantFilter, setMenuRestaurantFilter] = useState("all");
+  const [menuCategoryFilter, setMenuCategoryFilter] = useState("all");
   const [orders, setOrders] = useState([]);
   const [coupons, setCoupons] = useState([]);
   const [ownerOrderRows, setOwnerOrderRows] = useState([]);
@@ -196,6 +198,55 @@ export function OwnerDashboardPage() {
       (order) => order.orderStatus.toLowerCase() === orderFilter.toLowerCase(),
     );
   }, [ownerOrderRows, orderFilter]);
+
+  const filteredMenuFoods = useMemo(() => {
+    return foods.filter((food) => {
+      const restaurantId =
+        typeof food.restaurant === "object"
+          ? food.restaurant?._id
+          : food.restaurant;
+
+      const matchesRestaurant =
+        menuRestaurantFilter === "all" ||
+        String(restaurantId) === String(menuRestaurantFilter);
+      const matchesCategory =
+        menuCategoryFilter === "all" || food.category === menuCategoryFilter;
+
+      return matchesRestaurant && matchesCategory;
+    });
+  }, [foods, menuRestaurantFilter, menuCategoryFilter]);
+
+  const menuCategoryOptions = useMemo(() => {
+    const categorySet = new Set();
+
+    foods.forEach((food) => {
+      const restaurantId =
+        typeof food.restaurant === "object"
+          ? food.restaurant?._id
+          : food.restaurant;
+      const includeForSelectedRestaurant =
+        menuRestaurantFilter === "all" ||
+        String(restaurantId) === String(menuRestaurantFilter);
+
+      if (includeForSelectedRestaurant && food.category) {
+        categorySet.add(food.category);
+      }
+    });
+
+    return [
+      "all",
+      ...Array.from(categorySet).sort((a, b) => a.localeCompare(b)),
+    ];
+  }, [foods, menuRestaurantFilter]);
+
+  useEffect(() => {
+    if (
+      menuCategoryFilter !== "all" &&
+      !menuCategoryOptions.includes(menuCategoryFilter)
+    ) {
+      setMenuCategoryFilter("all");
+    }
+  }, [menuCategoryFilter, menuCategoryOptions]);
 
   const changeOrderStatus = async (orderId, orderStatus) => {
     try {
@@ -693,6 +744,35 @@ export function OwnerDashboardPage() {
                     <Plus className="w-4 h-4" /> Add Item
                   </Link>
                 </div>
+                <div className="p-4 border-b bg-gray-50 flex flex-col sm:flex-row gap-3">
+                  <select
+                    value={menuRestaurantFilter}
+                    onChange={(e) => setMenuRestaurantFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg bg-white"
+                  >
+                    <option value="all">All Restaurants</option>
+                    {restaurants.map((restaurant) => (
+                      <option key={restaurant._id} value={restaurant._id}>
+                        {restaurant.name}
+                      </option>
+                    ))}
+                  </select>
+
+                  <select
+                    value={menuCategoryFilter}
+                    onChange={(e) => setMenuCategoryFilter(e.target.value)}
+                    className="px-3 py-2 border rounded-lg bg-white"
+                  >
+                    <option value="all">All Categories</option>
+                    {menuCategoryOptions
+                      .filter((category) => category !== "all")
+                      .map((category) => (
+                        <option key={category} value={category}>
+                          {category}
+                        </option>
+                      ))}
+                  </select>
+                </div>
                 <div className="overflow-x-auto">
                   <table className="w-full min-w-[850px]">
                     <thead className="bg-gray-50">
@@ -715,7 +795,7 @@ export function OwnerDashboardPage() {
                       </tr>
                     </thead>
                     <tbody>
-                      {foods.map((food) => (
+                      {filteredMenuFoods.map((food) => (
                         <tr key={food._id} className="border-t">
                           <td className="px-4 py-3">{food.name}</td>
                           <td className="px-4 py-3">{food.category}</td>
@@ -742,10 +822,10 @@ export function OwnerDashboardPage() {
                     </tbody>
                   </table>
                 </div>
-                {foods.length === 0 && (
+                {filteredMenuFoods.length === 0 && (
                   <div className="p-10 text-center text-gray-500 flex flex-col items-center gap-2">
                     <AlertCircle className="w-8 h-8 text-gray-400" />
-                    No menu items found. Add your first item.
+                    No menu items found for selected filters.
                   </div>
                 )}
               </div>

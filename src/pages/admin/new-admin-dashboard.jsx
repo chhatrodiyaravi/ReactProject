@@ -31,8 +31,7 @@ export function NewAdminDashboard() {
   });
   const [activeTab, setActiveTab] = useState("dashboard");
   const [searchQuery, setSearchQuery] = useState("");
-  const [restaurantStatusFilter, setRestaurantStatusFilter] =
-    useState("pending");
+  const [restaurantStatusFilter, setRestaurantStatusFilter] = useState("all");
 
   const [users, setUsers] = useState([]);
   const [restaurants, setRestaurants] = useState([]);
@@ -94,7 +93,13 @@ export function NewAdminDashboard() {
       const [usersRes, restaurantsRes, ordersRes, couponsRes] =
         await Promise.all([
           userApi.list(token),
-          adminApi.restaurants({ token, status: restaurantStatusFilter }),
+          adminApi.restaurants({
+            token,
+            status:
+              restaurantStatusFilter === "all"
+                ? undefined
+                : restaurantStatusFilter,
+          }),
           orderApi.getAll(token),
           adminApi.coupons({ token }),
         ]);
@@ -306,6 +311,23 @@ export function NewAdminDashboard() {
       await fetchAll();
     } catch (err) {
       setError(err.message || "Failed to reject restaurant");
+    }
+  };
+
+  const removeRestaurant = async (restaurant) => {
+    const confirmed = window.confirm(
+      `Delete restaurant \"${restaurant.name}\"? This will also delete all food items for this restaurant.`,
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      await adminApi.deleteRestaurant({ id: restaurant._id, token });
+      await fetchAll();
+    } catch (err) {
+      setError(err.message || "Failed to delete restaurant");
     }
   };
 
@@ -806,6 +828,7 @@ export function NewAdminDashboard() {
                       }
                       className="px-3 py-2 border rounded-lg"
                     >
+                      <option value="all">All</option>
                       <option value="pending">Pending</option>
                       <option value="approved">Approved</option>
                       <option value="rejected">Rejected</option>
@@ -849,12 +872,21 @@ export function NewAdminDashboard() {
                                 >
                                   <XCircle className="w-4 h-4" /> Reject
                                 </button>
+                                <button
+                                  onClick={() => removeRestaurant(item)}
+                                  className="inline-flex items-center gap-1 px-3 py-1.5 text-red-700 border border-red-300 rounded hover:bg-red-50"
+                                >
+                                  <Trash2 className="w-4 h-4" /> Delete
+                                </button>
                               </>
                             )}
                             {item.approvalStatus !== "pending" && (
-                              <span className="text-xs text-gray-500">
-                                No action
-                              </span>
+                              <button
+                                onClick={() => removeRestaurant(item)}
+                                className="inline-flex items-center gap-1 px-3 py-1.5 text-red-700 border border-red-300 rounded hover:bg-red-50"
+                              >
+                                <Trash2 className="w-4 h-4" /> Delete
+                              </button>
                             )}
                           </div>
                         </td>

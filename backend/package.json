@@ -10,7 +10,9 @@
     "seed:restaurants": "node scripts/seedRestaurantsAndFoods.js",
     "seed:categories": "node scripts/seedCategories.js",
     "backfill:analytics": "node scripts/backfillAnalytics.js",
-    "backfill:analytics:dry": "node scripts/backfillAnalytics.js --dry-run"
+    "backfill:analytics:dry": "node scripts/backfillAnalytics.js --dry-run",
+    "backfill:cart-prices": "node scripts/backfillCartPrices.js",
+    "backfill:cart-prices:dry": "node scripts/backfillCartPrices.js --dry-run"
   },
   "keywords": [],
   "author": "",

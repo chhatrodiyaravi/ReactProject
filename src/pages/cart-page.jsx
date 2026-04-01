@@ -133,62 +133,76 @@ export function CartPage() {
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             <div className="lg:col-span-2 space-y-4">
-              {cartItems.map((item) => (
-                <div
-                  key={item._id}
-                  className="bg-white rounded-lg shadow-md p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-lg transition-shadow"
-                >
-                  <img
-                    src={
-                      item.food?.image
-                        ? getImageUrl(item.food.image)
-                        : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop"
-                    }
-                    alt={item.food?.name || "Food"}
-                    className="w-full h-40 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0 shadow-sm"
-                  />
+              {cartItems.map((item) =>
+                (() => {
+                  const unitPrice = Number(
+                    item.unitPrice ?? item.price ?? item.food?.price ?? 0,
+                  );
+                  const lineTotal = Number(
+                    item.lineTotal ?? unitPrice * item.quantity,
+                  );
 
-                  <div className="flex-1 w-full">
-                    <h3 className="font-semibold text-gray-900 mb-1 text-lg">
-                      {item.food?.name}
-                    </h3>
-                    <p className="text-xl font-bold text-orange-600">
-                      ₹{item.price}
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
-                    <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
-                      <button
-                        onClick={() =>
-                          updateQuantity(item._id, item.quantity - 1)
-                        }
-                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded"
-                      >
-                        <Minus className="w-4 h-4" />
-                      </button>
-                      <span className="w-8 text-center font-medium">
-                        {item.quantity}
-                      </span>
-                      <button
-                        onClick={() =>
-                          updateQuantity(item._id, item.quantity + 1)
-                        }
-                        className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded"
-                      >
-                        <Plus className="w-4 h-4" />
-                      </button>
-                    </div>
-
-                    <button
-                      onClick={() => updateQuantity(item._id, 0)}
-                      className="text-red-600 hover:text-red-700 p-2"
+                  return (
+                    <div
+                      key={item._id}
+                      className="bg-white rounded-lg shadow-md p-4 flex flex-col sm:flex-row items-start sm:items-center gap-4 hover:shadow-lg transition-shadow"
                     >
-                      <Trash2 className="w-5 h-5" />
-                    </button>
-                  </div>
-                </div>
-              ))}
+                      <img
+                        src={
+                          item.food?.image
+                            ? getImageUrl(item.food.image)
+                            : "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400&h=400&fit=crop"
+                        }
+                        alt={item.food?.name || "Food"}
+                        className="w-full h-40 sm:w-24 sm:h-24 object-cover rounded-lg flex-shrink-0 shadow-sm"
+                      />
+
+                      <div className="flex-1 w-full">
+                        <h3 className="font-semibold text-gray-900 mb-1 text-lg">
+                          {item.food?.name}
+                        </h3>
+                        <p className="text-sm text-gray-600">
+                          ₹{unitPrice} x {item.quantity}
+                        </p>
+                        <p className="text-xl font-bold text-orange-600">
+                          ₹{lineTotal}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center justify-between sm:justify-start gap-3 w-full sm:w-auto">
+                        <div className="flex items-center gap-2 bg-gray-100 rounded-lg px-2 py-1">
+                          <button
+                            onClick={() =>
+                              updateQuantity(item._id, item.quantity - 1)
+                            }
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded"
+                          >
+                            <Minus className="w-4 h-4" />
+                          </button>
+                          <span className="w-8 text-center font-medium">
+                            {item.quantity}
+                          </span>
+                          <button
+                            onClick={() =>
+                              updateQuantity(item._id, item.quantity + 1)
+                            }
+                            className="w-8 h-8 flex items-center justify-center hover:bg-gray-200 rounded"
+                          >
+                            <Plus className="w-4 h-4" />
+                          </button>
+                        </div>
+
+                        <button
+                          onClick={() => updateQuantity(item._id, 0)}
+                          className="text-red-600 hover:text-red-700 p-2"
+                        >
+                          <Trash2 className="w-5 h-5" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })(),
+              )}
             </div>
 
             <div className="lg:col-span-1">

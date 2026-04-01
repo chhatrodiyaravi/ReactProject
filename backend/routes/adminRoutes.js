@@ -5,6 +5,7 @@ import {
   createRestaurant,
   approveRestaurant,
   rejectRestaurant,
+  deleteRestaurant,
   suspendRestaurant,
   unsuspendRestaurant,
   getAllUsers,
@@ -43,6 +44,7 @@ router.put("/restaurants/:id/approve", approveRestaurant);
 router.put("/restaurants/:id/reject", rejectRestaurant);
 router.put("/restaurants/:id/suspend", suspendRestaurant);
 router.put("/restaurants/:id/unsuspend", unsuspendRestaurant);
+router.delete("/restaurants/:id", deleteRestaurant);
 
 // Users management
 router.get("/users", getAllUsers);

@@ -26,8 +26,10 @@ export function MenuPage() {
   const location = useLocation();
   const { token, isAuthenticated } = useAuth();
   const [restaurant, setRestaurant] = useState(null);
+  const [allRestaurantItems, setAllRestaurantItems] = useState([]);
   const [menuItems, setMenuItems] = useState([]);
   const [search, setSearch] = useState("");
+  const [selectedCategory, setSelectedCategory] = useState("all");
   const [cart, setCart] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
@@ -65,11 +67,48 @@ export function MenuPage() {
   }, [restaurantId, isAuthenticated, token]);
 
   useEffect(() => {
+    const fetchAllRestaurantItems = async () => {
+      try {
+        const foodsRes = await foodApi.list({
+          restaurant: restaurantId,
+        });
+        setAllRestaurantItems(foodsRes.data || []);
+      } catch {
+        setAllRestaurantItems([]);
+      }
+    };
+
+    fetchAllRestaurantItems();
+  }, [restaurantId]);
+
+  const categoryOptions = useMemo(() => {
+    const categories = [
+      ...new Set(
+        (allRestaurantItems || [])
+          .map((item) => item?.category?.toString().trim())
+          .filter(Boolean),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+
+    return ["all", ...categories];
+  }, [allRestaurantItems]);
+
+  useEffect(() => {
+    if (
+      selectedCategory !== "all" &&
+      !categoryOptions.includes(selectedCategory)
+    ) {
+      setSelectedCategory("all");
+    }
+  }, [selectedCategory, categoryOptions]);
+
+  useEffect(() => {
     const fetchMenuItems = async () => {
       try {
         const foodsRes = await foodApi.list({
           restaurant: restaurantId,
           search: search.trim(),
+          category: selectedCategory === "all" ? "" : selectedCategory,
         });
         setMenuItems(foodsRes.data || []);
       } catch (err) {
@@ -79,7 +118,7 @@ export function MenuPage() {
 
     const timer = setTimeout(fetchMenuItems, 250);
     return () => clearTimeout(timer);
-  }, [restaurantId, search]);
+  }, [restaurantId, search, selectedCategory]);
 
   const refreshCart = async () => {
     if (!isAuthenticated || !token) {
@@ -228,6 +267,25 @@ export function MenuPage() {
                 placeholder="Search dishes by name, category or description..."
                 className="flex-1 outline-none text-gray-900 placeholder-gray-500"
               />
+            </div>
+
+            <div className="mb-6 flex gap-2 overflow-x-auto pb-2">
+              {categoryOptions.map((category) => {
+                const isActive = selectedCategory === category;
+                return (
+                  <button
+                    key={category}
+                    onClick={() => setSelectedCategory(category)}
+                    className={`px-4 py-2 rounded-full border text-sm font-medium whitespace-nowrap transition-colors ${
+                      isActive
+                        ? "border-orange-600 bg-orange-50 text-orange-600"
+                        : "border-gray-300 bg-white text-gray-700 hover:border-orange-400"
+                    }`}
+                  >
+                    {category === "all" ? "All" : category}
+                  </button>
+                );
+              })}
             </div>
 
             <div>

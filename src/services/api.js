@@ -220,6 +220,11 @@ export const adminApi = {
       body: { reason },
       token,
     }),
+  deleteRestaurant: ({ id, token }) =>
+    request(`/admin/restaurants/${id}`, {
+      method: "DELETE",
+      token,
+    }),
   coupons: ({ token, status, search } = {}) => {
     const query = new URLSearchParams();
     if (status) {
