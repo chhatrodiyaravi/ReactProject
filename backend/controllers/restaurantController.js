@@ -1,5 +1,90 @@
 import Restaurant from "../models/Restaurant.js";
 
+const parseJsonSafely = (value, fallback) => {
+  if (typeof value !== "string") {
+    return fallback;
+  }
+
+  try {
+    return JSON.parse(value);
+  } catch {
+    return fallback;
+  }
+};
+
+const normalizeRestaurantPayload = (body = {}) => {
+  const payload = { ...body };
+
+  // Handle multipart keys like address[city]
+  const addressFromBracketKeys = Object.entries(body)
+    .filter(([key]) => key.startsWith("address[") && key.endsWith("]"))
+    .reduce((acc, [key, value]) => {
+      const nestedKey = key.slice(8, -1);
+      acc[nestedKey] = typeof value === "string" ? value.trim() : value;
+      return acc;
+    }, {});
+
+  if (Object.keys(addressFromBracketKeys).length > 0) {
+    payload.address = addressFromBracketKeys;
+  } else if (typeof body.address === "string") {
+    payload.address = parseJsonSafely(body.address, {});
+  } else if (!body.address || typeof body.address !== "object") {
+    payload.address = {};
+  }
+
+  // Handle multipart keys like cuisine[0]
+  const cuisineFromBracketKeys = Object.entries(body)
+    .filter(([key]) => key.startsWith("cuisine[") && key.endsWith("]"))
+    .sort((a, b) => {
+      const aIndex = Number.parseInt(a[0].slice(8, -1), 10);
+      const bIndex = Number.parseInt(b[0].slice(8, -1), 10);
+      return aIndex - bIndex;
+    })
+    .map(([, value]) => value)
+    .filter(Boolean);
+
+  if (cuisineFromBracketKeys.length > 0) {
+    payload.cuisine = cuisineFromBracketKeys;
+  } else if (Array.isArray(body.cuisine)) {
+    payload.cuisine = body.cuisine.filter(Boolean);
+  } else if (typeof body.cuisine === "string") {
+    const parsedCuisine = parseJsonSafely(body.cuisine, null);
+    payload.cuisine = Array.isArray(parsedCuisine)
+      ? parsedCuisine.filter(Boolean)
+      : body.cuisine
+          .split(",")
+          .map((item) => item.trim())
+          .filter(Boolean);
+  } else {
+    payload.cuisine = [];
+  }
+
+  if (typeof payload.name === "string") {
+    payload.name = payload.name.trim();
+  }
+  if (typeof payload.description === "string") {
+    payload.description = payload.description.trim();
+  }
+  if (typeof payload.phone === "string") {
+    payload.phone = payload.phone.trim();
+  }
+  if (typeof payload.email === "string") {
+    payload.email = payload.email.trim();
+  }
+
+  // Cleanup multipart helper keys so they are not passed to Mongo.
+  Object.keys(payload).forEach((key) => {
+    if (
+      (key.startsWith("address[") && key.endsWith("]")) ||
+      (key.startsWith("cuisine[") && key.endsWith("]"))
+    ) {
+      delete payload[key];
+    }
+  });
+
+  return payload;
+};
+
 // @desc    Get all restaurants
 // @route   GET /api/restaurants
 // @access  Public
@@ -98,15 +183,17 @@ export const getRestaurant = async (req, res) => {
 // @access  Private/Owner
 export const createRestaurant = async (req, res) => {
   try {
-    // Add owner to req.body
-    req.body.owner = req.user.id;
+    const payload = normalizeRestaurantPayload(req.body);
+
+    // Add owner to payload
+    payload.owner = req.user.id;
 
     // Add image path if uploaded
     if (req.file) {
-      req.body.image = `/uploads/products/${req.file.filename}`;
+      payload.image = `/uploads/products/${req.file.filename}`;
     }
 
-    const restaurant = await Restaurant.create(req.body);
+    const restaurant = await Restaurant.create(payload);
 
     res.status(201).json({
       success: true,
@@ -145,12 +232,17 @@ export const updateRestaurant = async (req, res) => {
       });
     }
 
+    const payload = normalizeRestaurantPayload(req.body);
+
     // Add image path if uploaded
     if (req.file) {
-      req.body.image = `/uploads/products/${req.file.filename}`;
+      payload.image = `/uploads/products/${req.file.filename}`;
     }
 
-    restaurant = await Restaurant.findByIdAndUpdate(req.params.id, req.body, {
+    // Never allow owner reassignment from this endpoint.
+    delete payload.owner;
+
+    restaurant = await Restaurant.findByIdAndUpdate(req.params.id, payload, {
       new: true,
       runValidators: true,
     });

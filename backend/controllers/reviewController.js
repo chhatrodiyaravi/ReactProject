@@ -1,4 +1,5 @@
 import Review from "../models/Review.js";
+import Restaurant from "../models/Restaurant.js";
 import mongoose from "mongoose";
 
 // @desc    Create a review for food
@@ -63,6 +64,21 @@ export const createReview = async (req, res) => {
 
     // Populate user info
     await review.populate("user", "name email");
+
+    // Update restaurant rating and totalReviews
+    const restaurant = await Restaurant.findById(normalizedRestaurantId);
+    if (restaurant) {
+      // Calculate new average rating
+      const allReviews = await Review.find({
+        restaurant: normalizedRestaurantId,
+      });
+      const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+      const newAverageRating = totalRating / allReviews.length;
+
+      restaurant.rating = Math.round(newAverageRating * 10) / 10; // Round to 1 decimal
+      restaurant.totalReviews = allReviews.length;
+      await restaurant.save();
+    }
 
     console.log("Review created:", review._id);
 
@@ -169,6 +185,21 @@ export const getRestaurantReviews = async (req, res) => {
 
     const total = await Review.countDocuments({ restaurant: restaurantId });
 
+    // Calculate average rating
+    const ratingStats = await Review.aggregate([
+      { $match: { restaurant: new mongoose.Types.ObjectId(restaurantId) } },
+      {
+        $group: {
+          _id: null,
+          averageRating: { $avg: "$rating" },
+          totalReviews: { $sum: 1 },
+          ratingDistribution: {
+            $push: "$rating",
+          },
+        },
+      },
+    ]);
+
     res.status(200).json({
       success: true,
       data: reviews,
@@ -177,6 +208,7 @@ export const getRestaurantReviews = async (req, res) => {
         pages: Math.ceil(total / parseInt(limit)),
         currentPage: parseInt(page),
       },
+      stats: ratingStats[0] || { averageRating: 0, totalReviews: 0 },
     });
   } catch (error) {
     console.error("Get restaurant reviews error:", error);
@@ -258,6 +290,17 @@ export const updateReview = async (req, res) => {
     await review.save();
     await review.populate("user", "name email");
 
+    // Update restaurant rating
+    const restaurant = await Restaurant.findById(review.restaurant);
+    if (restaurant) {
+      const allReviews = await Review.find({ restaurant: review.restaurant });
+      const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+      restaurant.rating =
+        Math.round((totalRating / allReviews.length) * 10) / 10;
+      restaurant.totalReviews = allReviews.length;
+      await restaurant.save();
+    }
+
     res.status(200).json({
       success: true,
       message: "Review updated successfully",
@@ -297,9 +340,27 @@ export const deleteReview = async (req, res) => {
       });
     }
 
+    const restaurantId = review.restaurant;
+
     await Review.findByIdAndDelete(id);
 
     console.log("Review deleted:", id);
+
+    // Update restaurant rating
+    const restaurant = await Restaurant.findById(restaurantId);
+    if (restaurant) {
+      const allReviews = await Review.find({ restaurant: restaurantId });
+      if (allReviews.length > 0) {
+        const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
+        restaurant.rating =
+          Math.round((totalRating / allReviews.length) * 10) / 10;
+        restaurant.totalReviews = allReviews.length;
+      } else {
+        restaurant.rating = 0;
+        restaurant.totalReviews = 0;
+      }
+      await restaurant.save();
+    }
 
     res.status(200).json({
       success: true,

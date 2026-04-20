@@ -9,6 +9,7 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "seed:restaurants": "node scripts/seedRestaurantsAndFoods.js",
     "seed:categories": "node scripts/seedCategories.js",
+    "migrate:ratings": "node scripts/migrateReviewsToRatings.js",
     "backfill:analytics": "node scripts/backfillAnalytics.js",
     "backfill:analytics:dry": "node scripts/backfillAnalytics.js --dry-run",
     "backfill:cart-prices": "node scripts/backfillCartPrices.js",

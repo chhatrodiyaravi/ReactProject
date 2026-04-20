@@ -14,15 +14,19 @@ import {
   ChevronDown,
   Info,
   Phone,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { Link, useNavigate, useLocation } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../context/ThemeContext";
 
 export function Header({ cartItemCount = 0 }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { user, logout, isAuthenticated } = useAuth();
+  const { isDark, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -60,7 +64,7 @@ export function Header({ cartItemCount = 0 }) {
     }`;
 
   return (
-    <header className="bg-white shadow-md sticky top-0 z-50">
+    <header className="bg-white dark:bg-slate-900 shadow-md sticky top-0 z-50 border-b border-transparent dark:border-slate-700">
       <div className="max-w-7xl mx-auto px-3 sm:px-4 py-3">
         <div className="flex items-center justify-between">
           {/* Logo */}
@@ -97,6 +101,20 @@ export function Header({ cartItemCount = 0 }) {
                 <span>Contact</span>
               </Link>
             </nav>
+            <button
+              onClick={toggleTheme}
+              className="hidden md:inline-flex p-2 mr-2 rounded-lg hover:bg-gray-100 dark:hover:bg-slate-800 transition-colors"
+              aria-label={
+                isDark ? "Switch to light mode" : "Switch to dark mode"
+              }
+              title={isDark ? "Switch to light mode" : "Switch to dark mode"}
+            >
+              {isDark ? (
+                <Sun className="w-5 h-5 text-yellow-400" />
+              ) : (
+                <Moon className="w-5 h-5 text-gray-700" />
+              )}
+            </button>
 
             {/* Cart Icon - Only for logged-in customers */}
             {isAuthenticated && user?.role === "customer" && (
@@ -308,6 +326,18 @@ export function Header({ cartItemCount = 0 }) {
               </Link>
 
               <div className="border-t border-gray-200 mt-2 pt-2">
+                <button
+                  onClick={toggleTheme}
+                  className="flex items-center gap-3 w-full px-4 py-3 text-gray-700 hover:bg-orange-50 rounded-lg"
+                >
+                  {isDark ? (
+                    <Sun className="w-5 h-5" />
+                  ) : (
+                    <Moon className="w-5 h-5" />
+                  )}
+                  <span>{isDark ? "Light Mode" : "Dark Mode"}</span>
+                </button>
+
                 {isAuthenticated ? (
                   <>
                     <div className="px-4 py-3 bg-gray-50 rounded-lg mb-2">

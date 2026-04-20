@@ -170,24 +170,24 @@ export function LoginPage() {
           <div className="mt-4 text-center space-y-2">
             <p className="text-sm text-gray-500">or</p>
             <div className="space-y-2">
-              <Link
+              {/* <Link
                 to="/owner-register"
                 className="block text-sm text-blue-700 hover:underline"
               >
                 Register Owner
-              </Link>
+              </Link> */}
               <Link
                 to="/owner-login"
                 className="block text-sm text-blue-600 hover:underline"
               >
                 Login Owner
               </Link>
-              <Link
+              {/* <Link
                 to="/admin-login"
                 className="block text-sm text-green-600 hover:underline"
               >
                 Admin Login
-              </Link>
+              </Link> */}
             </div>
           </div>
         </div>

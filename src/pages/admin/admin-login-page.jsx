@@ -124,7 +124,7 @@ export function AdminLoginPage() {
         </div>
 
         <div className="mt-6 text-center space-y-2">
-          <Link
+          {/* <Link
             to="/login"
             className="block text-sm text-orange-600 hover:underline"
           >
@@ -135,7 +135,7 @@ export function AdminLoginPage() {
             className="block text-sm text-blue-600 hover:underline"
           >
             Restaurant Owner Login
-          </Link>
+          </Link> */}
         </div>
 
         <div className="mt-6 text-center">

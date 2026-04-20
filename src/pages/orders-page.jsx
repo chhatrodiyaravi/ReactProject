@@ -7,6 +7,13 @@ import { orderApi } from "../services/api";
 import { useEffect, useMemo, useState } from "react";
 import { ReviewDialog } from "../components/review-dialog";
 
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  return `${apiBaseUrl}${imagePath}`;
+};
+
 export function OrdersPage() {
   const { token } = useAuth();
   const [orders, setOrders] = useState([]);
@@ -87,7 +94,18 @@ export function OrdersPage() {
                 className="bg-white rounded-lg shadow-md p-6 hover:shadow-lg transition-shadow"
               >
                 <div className="flex flex-col md:flex-row gap-4">
-                  <div className="w-full md:w-32 h-32 bg-gradient-to-br from-orange-200 to-orange-400 rounded-lg flex-shrink-0"></div>
+                  <div className="w-full md:w-32 h-32 rounded-lg overflow-hidden flex-shrink-0 bg-gradient-to-br from-orange-200 to-orange-400">
+                    {order.orderItems?.[0]?.restaurant?.image ? (
+                      <img
+                        src={getImageUrl(order.orderItems[0].restaurant.image)}
+                        alt={
+                          order.orderItems?.[0]?.restaurant?.name ||
+                          "Restaurant"
+                        }
+                        className="w-full h-full object-cover"
+                      />
+                    ) : null}
+                  </div>
 
                   <div className="flex-1">
                     <div className="flex justify-between items-start mb-2">

@@ -136,18 +136,7 @@ export function OwnerLoginPage() {
         </div>
 
         <div className="mt-6 text-center space-y-2">
-          <Link
-            to="/login"
-            className="block text-sm text-orange-600 hover:underline"
-          >
-            Customer Login
-          </Link>
-          <Link
-            to="/admin-login"
-            className="block text-sm text-green-600 hover:underline"
-          >
-            Admin Login
-          </Link>
+         
         </div>
 
         <div className="mt-6 text-center">

@@ -15,6 +15,13 @@ import { useEffect, useMemo, useState } from "react";
 import { orderApi } from "../services/api";
 import { ReviewDialog } from "../components/review-dialog";
 
+const getImageUrl = (imagePath) => {
+  if (!imagePath) return "";
+  if (imagePath.startsWith("http")) return imagePath;
+  const apiBaseUrl = import.meta.env.VITE_API_URL || "http://localhost:5000";
+  return `${apiBaseUrl}${imagePath}`;
+};
+
 export function OrderStatusPage() {
   const { token } = useAuth();
   const [searchParams] = useSearchParams();
@@ -121,7 +128,20 @@ export function OrderStatusPage() {
         </div>
 
         <div className="bg-white rounded-lg shadow-md p-6 mb-6">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-center md:text-left items-center">
+            <div className="flex justify-center md:justify-start">
+              <div className="w-20 h-20 rounded-lg overflow-hidden bg-gradient-to-br from-orange-200 to-orange-400 flex-shrink-0">
+                {order.orderItems?.[0]?.restaurant?.image ? (
+                  <img
+                    src={getImageUrl(order.orderItems[0].restaurant.image)}
+                    alt={
+                      order.orderItems?.[0]?.restaurant?.name || "Restaurant"
+                    }
+                    className="w-full h-full object-cover"
+                  />
+                ) : null}
+              </div>
+            </div>
             <div>
               <p className="text-sm text-gray-500 mb-1">Order ID</p>
               <p className="font-semibold text-gray-900">{order._id}</p>

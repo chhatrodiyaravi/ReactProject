@@ -29,20 +29,20 @@ export function FoodDetailsPage() {
   const [error, setError] = useState("");
   const [reviewRefresh, setReviewRefresh] = useState(0);
 
-  useEffect(() => {
-    const fetchFood = async () => {
-      try {
-        setLoading(true);
-        setError("");
-        const res = await foodApi.getById(id);
-        setFoodItem(res.data);
-      } catch (err) {
-        setError(err.message || "Failed to load food details");
-      } finally {
-        setLoading(false);
-      }
-    };
+  const fetchFood = async () => {
+    try {
+      setLoading(true);
+      setError("");
+      const res = await foodApi.getById(id);
+      setFoodItem(res.data);
+    } catch (err) {
+      setError(err.message || "Failed to load food details");
+    } finally {
+      setLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchFood();
   }, [id]);
 
@@ -231,9 +231,10 @@ export function FoodDetailsPage() {
                         : foodItem.restaurant
                     }
                     token={token}
-                    onReviewSubmitted={() =>
-                      setReviewRefresh((prev) => prev + 1)
-                    }
+                    onReviewSubmitted={async () => {
+                      setReviewRefresh((prev) => prev + 1);
+                      await fetchFood();
+                    }}
                   />
                 ) : (
                   <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">

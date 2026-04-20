@@ -79,7 +79,7 @@ export const getMyOrders = async (req, res) => {
   try {
     const orders = await Order.find({ user: req.user.id })
       .populate("orderItems.food", "name price image")
-      .populate("orderItems.restaurant", "name")
+      .populate("orderItems.restaurant", "name image")
       .populate("couponApplied", "code discountType discountValue")
       .sort("-createdAt");
 
@@ -104,7 +104,7 @@ export const getOrderById = async (req, res) => {
     const order = await Order.findById(req.params.id)
       .populate("user", "name email phone")
       .populate("orderItems.food", "name price image")
-      .populate("orderItems.restaurant", "name phone address")
+      .populate("orderItems.restaurant", "name phone address image")
       .populate("couponApplied", "code discountType discountValue");
 
     if (!order) {

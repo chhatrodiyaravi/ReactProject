@@ -62,7 +62,10 @@ const reviewSchema = new mongoose.Schema(
       default: Date.now,
     },
   },
-  { timestamps: true },
+  {
+    timestamps: true,
+    collection: "ratings",
+  },
 );
 
 // Index for better query performance
@@ -108,11 +111,10 @@ reviewSchema.post("save", async function () {
   await this.constructor.getAverageRating(this.food);
 });
 
-// Call getAverageRating before remove
-reviewSchema.pre("findByIdAndDelete", async function () {
-  const review = await this.model.findOne(this.getFilter());
-  if (review) {
-    await review.constructor.getAverageRating(review.food);
+// Recompute food rating after review deletion.
+reviewSchema.post("findOneAndDelete", async function (doc) {
+  if (doc) {
+    await doc.constructor.getAverageRating(doc.food);
   }
 });
 
