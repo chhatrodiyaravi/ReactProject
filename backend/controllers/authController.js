@@ -1,7 +1,6 @@
 import User from "../models/User.js";
 import jwt from "jsonwebtoken";
 import crypto from "crypto";
-import { sendPasswordResetEmail } from "../utils/email.js";
 
 // Generate JWT Token
 const generateToken = (id) => {
@@ -127,7 +126,7 @@ export const getMe = async (req, res) => {
   }
 };
 
-// @desc    Forgot password - send reset email
+// @desc    Forgot password - generate reset token directly
 // @route   POST /api/auth/forgot-password
 // @access  Public
 export const forgotPassword = async (req, res) => {
@@ -154,41 +153,18 @@ export const forgotPassword = async (req, res) => {
       user.resetPasswordExpire = new Date(Date.now() + 15 * 60 * 1000);
       await user.save({ validateBeforeSave: false });
 
-      const resetBaseUrl =
-        process.env.RESET_PASSWORD_URL ||
-        `${process.env.CLIENT_URL || "http://localhost:5173"}/reset-password`;
-      const resetUrl = `${resetBaseUrl.replace(/\/$/, "")}/${resetToken}`;
-
-      try {
-        const emailResult = await sendPasswordResetEmail({
-          to: user.email,
-          name: user.name,
-          resetUrl,
-        });
-
-        if (emailResult.mode === "ethereal") {
-          console.log(
-            "[ForgotPassword] SMTP not configured. Using Ethereal preview:",
-            emailResult.previewUrl,
-          );
-        }
-      } catch (mailError) {
-        console.error("[ForgotPassword] Email send failed:", mailError.message);
-        user.resetPasswordToken = undefined;
-        user.resetPasswordExpire = undefined;
-        await user.save({ validateBeforeSave: false });
-
-        return res.status(500).json({
-          success: false,
-          message: "Unable to send reset email right now. Please try again.",
-        });
-      }
+      return res.status(200).json({
+        success: true,
+        message: "Reset token generated successfully.",
+        data: {
+          resetToken,
+        },
+      });
     }
 
-    res.status(200).json({
-      success: true,
-      message:
-        "If this email is registered, a password reset link has been sent.",
+    return res.status(404).json({
+      success: false,
+      message: "No user found with this email.",
     });
   } catch (error) {
     res.status(500).json({

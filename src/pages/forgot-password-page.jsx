@@ -1,5 +1,5 @@
-import { Link } from "react-router-dom";
-import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { Mail, ArrowLeft } from "lucide-react";
 import { useState } from "react";
 import { isValidEmail } from "../utils/validation";
 import { authApi } from "../services/api";
@@ -8,7 +8,7 @@ export function ForgotPasswordPage() {
   const [email, setEmail] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
-  const [emailSent, setEmailSent] = useState(false);
+  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -29,11 +29,19 @@ export function ForgotPasswordPage() {
     setLoading(true);
 
     try {
-      await authApi.forgotPassword({ email: trimmedEmail });
-      setEmail(trimmedEmail);
-      setEmailSent(true);
+      const response = await authApi.forgotPassword({ email: trimmedEmail });
+      const resetToken = response?.data?.resetToken;
+
+      if (resetToken) {
+        navigate(`/reset-password/${resetToken}`);
+        return;
+      }
+
+      setError("No reset token generated for this account.");
     } catch {
-      setError("Unable to send reset email right now. Please try again.");
+      setError(
+        "Unable to process forgot password right now. Please try again.",
+      );
     } finally {
       setLoading(false);
     }
@@ -48,7 +56,7 @@ export function ForgotPasswordPage() {
             Forgot Password?
           </h2>
           <p className="text-gray-600 mt-2">
-            No worries! Enter your email and we'll send you reset instructions
+            Enter your email to continue with password reset
           </p>
         </div>
 
@@ -59,48 +67,32 @@ export function ForgotPasswordPage() {
             </div>
           )}
 
-          {!emailSent ? (
-            <form onSubmit={handleSubmit} className="space-y-6" noValidate>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email Address
-                </label>
-                <div className="relative">
-                  <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
-                  <input
-                    type="text"
-                    inputMode="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Enter your registered email"
-                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
-                  />
-                </div>
+          <form onSubmit={handleSubmit} className="space-y-6" noValidate>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Email Address
+              </label>
+              <div className="relative">
+                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <input
+                  type="text"
+                  inputMode="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your registered email"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent outline-none"
+                />
               </div>
-
-              <button
-                type="submit"
-                disabled={loading}
-                className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? "Sending..." : "Send Reset Link"}
-              </button>
-            </form>
-          ) : (
-            <div className="text-center py-6">
-              <CheckCircle className="w-16 h-16 text-green-500 mx-auto mb-4" />
-              <h3 className="text-xl font-semibold text-gray-900 mb-2">
-                Check Your Email
-              </h3>
-              <p className="text-gray-600 mb-4">
-                We've sent password reset instructions to <br />
-                <span className="font-medium text-gray-900">{email}</span>
-              </p>
-              <p className="text-sm text-gray-500">
-                Use the link in your inbox to continue.
-              </p>
             </div>
-          )}
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-orange-600 text-white py-3 rounded-lg font-medium hover:bg-orange-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              {loading ? "Processing..." : "Continue to Reset"}
+            </button>
+          </form>
 
           <div className="mt-6 text-center">
             <p className="text-gray-600">

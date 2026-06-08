@@ -20,50 +20,30 @@ const getSmtpConfig = () => {
   };
 };
 
-const getTransport = async () => {
+const getTransport = () => {
   const smtp = getSmtpConfig();
 
-  if (smtp) {
-    return {
-      transporter: nodemailer.createTransport({
-        host: smtp.host,
-        port: smtp.port,
-        secure: smtp.secure,
-        auth: smtp.auth,
-      }),
-      from: smtp.from,
-      mode: "smtp",
-    };
-  }
-
-  if (process.env.NODE_ENV === "production") {
+  if (!smtp) {
     throw new Error(
       "SMTP config missing. Set SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASS, and SMTP_FROM.",
     );
   }
 
-  const testAccount = await nodemailer.createTestAccount();
-
   return {
     transporter: nodemailer.createTransport({
-      host: "smtp.ethereal.email",
-      port: 587,
-      secure: false,
-      auth: {
-        user: testAccount.user,
-        pass: testAccount.pass,
-      },
+      host: smtp.host,
+      port: smtp.port,
+      secure: smtp.secure,
+      auth: smtp.auth,
     }),
-    from: `FoodHub Dev <${testAccount.user}>`,
-    mode: "ethereal",
+    from: smtp.from,
   };
 };
 
 export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
-  const transport = await getTransport();
-
   const recipientName = name || "FoodHub User";
 
+  const transport = getTransport();
   const info = await transport.transporter.sendMail({
     from: transport.from,
     to,
@@ -84,8 +64,6 @@ export const sendPasswordResetEmail = async ({ to, name, resetUrl }) => {
   });
 
   return {
-    mode: transport.mode,
     messageId: info.messageId,
-    previewUrl: nodemailer.getTestMessageUrl(info) || null,
   };
 };

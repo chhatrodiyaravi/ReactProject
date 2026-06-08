@@ -26,3 +26,7 @@ build/
 
 # OS
 Thumbs.db
+
+# Documentation Folders (Internal/Development)
+_documentation/
+backend/_documentation/

@@ -63,6 +63,24 @@ npm start
 
 The server will run on `http://localhost:5000`
 
+## Database Backup
+
+Create a JSON backup of every MongoDB collection used by the backend:
+
+```bash
+npm run backup:db
+```
+
+By default, backups are written to `backend/backups/` with a timestamped filename.
+
+If you want to choose a specific destination file, pass `--output`:
+
+```bash
+npm run backup:db -- --output ./my-backup.json
+```
+
+This backup format is a JSON export. It is easy to inspect and restore from with custom scripts, but it is not the same as a `mongodump` binary snapshot.
+
 ## API Endpoints
 
 ### Authentication

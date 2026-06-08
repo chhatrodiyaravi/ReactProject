@@ -1,29 +1,31 @@
 import { BrowserRouter, Routes, Route } from "react-router-dom";
-import { AuthProvider } from "./context/AuthContext";
-import { ThemeProvider } from "./context/ThemeContext";
-import { ProtectedRoute } from "./components/ProtectedRoute";
-import { HomePage } from "./pages/home-page";
-import { LoginPage } from "./pages/login-page";
-import { RegisterPage } from "./pages/register-page";
-import { RestaurantListPage } from "./pages/restaurant-list-page";
-import { MenuPage } from "./pages/menu-page";
-import { CartPage } from "./pages/cart-page";
-import { OrderConfirmationPage } from "./pages/order-confirmation-page";
-import { ProfilePage } from "./pages/profile-page";
-import { OwnerLoginPage } from "./pages/restaurant-owner/owner-login-page";
-import { OwnerRegisterPage } from "./pages/restaurant-owner/owner-register-page";
-import { OwnerDashboardPage } from "./pages/restaurant-owner/owner-dashboard-page";
-import { AddFoodPage } from "./pages/restaurant-owner/add-food-page";
-import { AdminLoginPage } from "./pages/admin/admin-login-page";
-import { FoodDetailsPage } from "./pages/food-details-page";
-import { CheckoutPage } from "./pages/checkout-page";
-import { OrderStatusPage } from "./pages/order-status-page";
-import { OrdersPage } from "./pages/orders-page";
-import { NewAdminDashboard } from "./pages/admin/new-admin-dashboard";
-import { AboutPage } from "./pages/about-page";
-import { ContactPage } from "./pages/contact-page";
-import { ForgotPasswordPage } from "./pages/forgot-password-page";
-import { ResetPasswordPage } from "./pages/reset-password-page";
+import { AuthProvider, ThemeProvider } from "./context";
+import { ProtectedRoute } from "./components";
+import {
+  HomePage,
+  LoginPage,
+  RegisterPage,
+  RestaurantListPage,
+  MenuPage,
+  CartPage,
+  OrderConfirmationPage,
+  ProfilePage,
+  FoodDetailsPage,
+  CheckoutPage,
+  OrderStatusPage,
+  OrdersPage,
+  AboutPage,
+  ContactPage,
+  ForgotPasswordPage,
+  ResetPasswordPage,
+} from "./pages";
+import {
+  OwnerLoginPage,
+  OwnerRegisterPage,
+  OwnerDashboardPage,
+  AddFoodPage,
+} from "./pages/restaurant-owner";
+import { AdminLoginPage, NewAdminDashboard } from "./pages/admin";
 
 export default function App() {
   return (
